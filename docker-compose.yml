@@ -37,7 +37,7 @@ services:
       NODE_ENV: development
       HOST: 0.0.0.0
       PORT: 3000
-      CORS_ORIGIN: http://localhost:4200
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:4200,http://qalibre.detectpl.com,https://qalibre.detectpl.com}
       DATABASE_URL: postgresql://${POSTGRES_USER:-qa_user}:${POSTGRES_PASSWORD:-qa_password}@postgres:5432/${POSTGRES_DB:-qa_dataset_db}?schema=public
     ports:
       - '3000:3000'
@@ -52,10 +52,10 @@ services:
           '-e',
           "fetch('http://127.0.0.1:3000/health').then((response) => { if (!response.ok) process.exit(1); }).catch(() => process.exit(1));",
         ]
-      start_period: 45s
+      start_period: 5m
       interval: 15s
       timeout: 5s
-      retries: 10
+      retries: 20
 
   frontend:
     build:

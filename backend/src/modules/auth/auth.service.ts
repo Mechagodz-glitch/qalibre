@@ -12,10 +12,13 @@ import {
 } from './auth.constants.js';
 import type { AuthenticatedAppUser } from './auth.types.js';
 
-const microsoftIssuer = `https://login.microsoftonline.com/${env.AZURE_TENANT_ID}/v2.0`;
-const microsoftJwks = createRemoteJWKSet(
-  new URL(`https://login.microsoftonline.com/${env.AZURE_TENANT_ID}/discovery/v2.0/keys`),
-);
+const authDisabled = env.AUTH_DISABLED;
+const microsoftIssuer = authDisabled ? '' : `https://login.microsoftonline.com/${env.AZURE_TENANT_ID}/v2.0`;
+const microsoftJwks = authDisabled
+  ? null
+  : createRemoteJWKSet(
+      new URL(`https://login.microsoftonline.com/${env.AZURE_TENANT_ID}/discovery/v2.0/keys`),
+    );
 
 type MicrosoftIdTokenClaims = Prisma.JsonObject & {
   oid?: string;
@@ -90,6 +93,25 @@ type ProjectQuarterAllocationWithRelations = Prisma.ProjectQuarterAllocationGetP
     };
   };
 }>;
+
+export function getLocalAuthenticatedUser(): AuthenticatedAppUser {
+  const pageAccesses = [...appPageAccessKeys];
+
+  return {
+    id: 'local-auth-user',
+    email: 'local-admin@qalibre.local',
+    name: env.DEFAULT_ACTOR,
+    role: AppUserRole.ADMIN,
+    isActive: true,
+    pageAccesses,
+    contributor: null,
+    contributorId: null,
+    contributorName: null,
+    accessiblePages: pageAccesses,
+    isAdmin: true,
+    lastLoginAt: null,
+  };
+}
 
 function normalizeEmail(value: string | null | undefined) {
   return value?.trim().toLowerCase() ?? '';
@@ -389,8 +411,13 @@ async function ensureUniqueFeatureSlug(pageId: string, name: string) {
 }
 
 async function verifyMicrosoftIdToken(token: string) {
+  const jwks = microsoftJwks;
+  if (authDisabled || !jwks) {
+    throw unauthorized('Microsoft sign-in is not configured for this deployment.');
+  }
+
   try {
-    const verified = await jwtVerify(token, microsoftJwks, {
+    const verified = await jwtVerify(token, jwks, {
       issuer: microsoftIssuer,
       audience: env.AZURE_CLIENT_ID,
     });
@@ -406,6 +433,24 @@ async function verifyMicrosoftIdToken(token: string) {
 }
 
 export async function getAuthConfig() {
+  if (authDisabled) {
+    return {
+      clientId: '',
+      tenantId: '',
+      authority: '',
+      redirectPath: '/auth/callback',
+      postLogoutRedirectPath: '/login',
+      scopes: [],
+      pageAccessDefinitions: appPageAccessDefinitions.map((definition) => ({
+        key: definition.key,
+        label: definition.label,
+        route: definition.route,
+        description: definition.description,
+        ...(definition.key === 'admin' ? { adminOnly: true } : {}),
+      })),
+    };
+  }
+
   return {
     clientId: env.AZURE_CLIENT_ID,
     tenantId: env.AZURE_TENANT_ID,
@@ -424,6 +469,10 @@ export async function getAuthConfig() {
 }
 
 export async function resolveAuthenticatedUser(token: string) {
+  if (authDisabled) {
+    return getLocalAuthenticatedUser();
+  }
+
   const claims = await verifyMicrosoftIdToken(token);
   const email = extractEmail(claims);
   const name = normalizeName(claims.name, email || 'Unassigned User');
@@ -581,6 +630,12 @@ export async function resolveAuthenticatedUser(token: string) {
 }
 
 export async function getAuthenticatedUser(token: string) {
+  if (authDisabled) {
+    return {
+      user: getLocalAuthenticatedUser(),
+    };
+  }
+
   const user = await resolveAuthenticatedUser(token);
   return {
     user,

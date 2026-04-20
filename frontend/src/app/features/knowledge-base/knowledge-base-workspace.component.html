@@ -519,49 +519,6 @@
                 </section>
               }
 
-              @if (currentAsset(); as asset) {
-                <section class="preview-block legacy-hidden" aria-hidden="true">
-                  <div class="section-heading">
-                    <p class="section-label">Linked structured items</p>
-                  </div>
-                  @if (asset.links.length) {
-                    <div class="linked-record-list">
-                      @for (link of asset.links; track link.id) {
-                        <article class="linked-record-card">
-                          <div class="linked-record-card__head">
-                            <div>
-                              <p class="section-label">Structured item</p>
-                              <strong>{{ link.datasetItemTitle }}</strong>
-                            </div>
-                            <small>{{ getEntityLabel(link.datasetItemType) }} · {{ link.datasetItemStatus }}</small>
-                          </div>
-                          <button mat-button type="button" class="linked-record-card__button" (click)="removeLinkFromAsset(link.id)">Unlink</button>
-                        </article>
-                      }
-                    </div>
-                  } @else {
-                    <p class="muted-copy">This source has not been linked to any structured knowledge yet.</p>
-                  }
-
-                  <div class="link-form">
-                    <mat-form-field appearance="outline">
-                      <mat-label>Link to structured item</mat-label>
-                      <mat-select [formControl]="linkControl">
-                        <mat-option value="">Select item</mat-option>
-                        @for (item of availableLinkTargets(); track item.id) {
-                          <mat-option [value]="item.id">{{ item.title }} · {{ getEntityLabel(item.itemType) }}</mat-option>
-                        }
-                      </mat-select>
-                    </mat-form-field>
-                    <mat-form-field appearance="outline">
-                      <mat-label>Link note</mat-label>
-                      <input matInput [formControl]="linkNotesControl" />
-                    </mat-form-field>
-                    <button mat-flat-button class="brand-button" type="button" (click)="addLinkToAsset()">Link item</button>
-                  </div>
-                </section>
-              }
-
               @if (assetExtractedMetadata()) {
                 <section class="preview-block">
                   <p class="section-label">Extraction details</p>
@@ -757,30 +714,6 @@
                   </mat-form-field>
                 }
               </form>
-
-              @if (currentStructuredItem(); as item) {
-                <section class="preview-block legacy-hidden" aria-hidden="true">
-                  <p class="section-label">Linked source assets</p>
-                  @if (item.linkedAssetsPreview.length) {
-                    <div class="linked-record-list">
-                      @for (asset of item.linkedAssetsPreview; track asset.id) {
-                        <article class="linked-record-card">
-                          <div class="linked-record-card__head">
-                            <div>
-                              <p class="section-label">Linked source</p>
-                              <strong>{{ asset.title }}</strong>
-                            </div>
-                            <small>{{ asset.kind }}{{ asset.sourceFormat ? ' · ' + asset.sourceFormat : '' }}</small>
-                          </div>
-                          <button mat-button type="button" class="linked-record-card__button" (click)="openLinkedAssetPreview(asset.id)">Open</button>
-                        </article>
-                      }
-                    </div>
-                  } @else {
-                    <p class="muted-copy">No uploaded source is linked to this structured item yet.</p>
-                  }
-                </section>
-              }
 
               <div class="editor-actions">
                 <button mat-flat-button class="brand-button" type="button" (click)="saveStructured()" [disabled]="saving()">

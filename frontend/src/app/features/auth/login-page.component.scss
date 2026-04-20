@@ -4,6 +4,11 @@
   font-family: 'Inter', var(--font-body), sans-serif;
 }
 
+.brand-icon {
+  width: 3.7vw;
+  filter: drop-shadow(5px 8px 7px rgba(0, 0, 0, 0.5));
+}
+
 .login-shell {
   min-height: 100vh;
   display: grid;
@@ -21,6 +26,7 @@
   height: 100%;
   backdrop-filter: blur(6px);
 }
+
 // .login-shell::before {
 //   content: '';
 //   position: absolute;
@@ -89,15 +95,8 @@
 }
 
 .brand-tile {
-  width: 4.75rem;
-  height: 4.75rem;
-  border-radius: 1.05rem;
-  background: #1c3564fa;
   display: grid;
   place-items: center;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 10px 22px rgba(11, 48, 62, 0.14);
 }
 
 .brand-tile span {

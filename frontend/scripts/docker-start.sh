@@ -21,4 +21,4 @@ rm -rf .angular/cache
 
 echo "[frontend] Using API proxy target: ${NG_PROXY_TARGET:-http://127.0.0.1:3000}"
 echo "[frontend] Starting Angular dev server"
-npm run start -- --port 4200
+exec npm run start -- --port 4200

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+# Run this on the EC2 host after the deploy script uploads it.
+
 log() {
   printf '\n[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
 }
@@ -162,7 +164,9 @@ main() {
   docker compose version
   git --version
   jq --version
-  rsync --version | head -n 1
+  local rsync_version
+  rsync_version="$(rsync --version)"
+  printf '%s\n' "${rsync_version%%$'\n'*}"
 
   log "EC2 prerequisite setup completed."
   if [[ -n "$TARGET_USER" ]]; then
