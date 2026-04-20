@@ -5,10 +5,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 EC2_HOST="${EC2_HOST:-16.28.63.198}"
-PEM_PATH="${PEM_PATH:-C:/Users/Khyati/Downloads/TEST-ENGG-SOFT-TP-MISC-OTH-QALIBRE-AF_SOUTH_1-0426-00001_2026-04-20_05_30_46.pem}"
-EC2_USER="${EC2_USER:-}"
+PEM_PATH="${PEM_PATH:-C:/Users/Aravind/server_keys/TEST-ENGG-SOFT-TP-MISC-OTH-QALIBRE-AF_SOUTH_1-0426-00001_2026-04-20_05_30_46.pem}"
+EC2_USER="${EC2_USER:-ubuntu}"
 REMOTE_DIR="${REMOTE_DIR:-/opt/qalibre/app}"
 SSH_PORT="${SSH_PORT:-22}"
+REMOTE_BOOTSTRAP_DIR="${REMOTE_BOOTSTRAP_DIR:-/tmp/qalibre-ec2-bootstrap}"
+SYNC_TOOL=""
 
 ROOT_ENV_FILE="${PROJECT_DIR}/.env"
 BACKEND_ENV_FILE="${PROJECT_DIR}/backend/.env"
@@ -77,10 +79,18 @@ parse_args() {
 }
 
 require_local_tools() {
-  local tools=(bash ssh scp rsync awk grep sed mktemp chmod)
+  local tools=(bash ssh scp awk mktemp chmod)
   for tool in "${tools[@]}"; do
     command -v "$tool" >/dev/null 2>&1 || fail "Required local tool not found: $tool"
   done
+
+  if command -v rsync >/dev/null 2>&1; then
+    SYNC_TOOL="rsync"
+  elif command -v tar >/dev/null 2>&1; then
+    SYNC_TOOL="tar"
+  else
+    fail "Required local tool not found: rsync or tar"
+  fi
 }
 
 ensure_required_project_files() {
@@ -141,12 +151,23 @@ validate_backend_env() {
 
   [[ -n "$openai_key" ]] || warn "OPENAI_API_KEY is empty in backend/.env. AI generation will not work until it is set."
 
-  if [[ -z "$microsoft_tenant" && -z "$azure_tenant" ]]; then
-    warn "No Azure/Microsoft tenant ID found in backend/.env. Auth configuration may fail."
+  local has_tenant has_client
+  has_tenant="false"
+  has_client="false"
+  if [[ -n "$microsoft_tenant" || -n "$azure_tenant" ]]; then
+    has_tenant="true"
+  fi
+  if [[ -n "$microsoft_client" || -n "$azure_client" ]]; then
+    has_client="true"
   fi
 
-  if [[ -z "$microsoft_client" && -z "$azure_client" ]]; then
-    warn "No Azure/Microsoft client ID found in backend/.env. Auth configuration may fail."
+  if [[ "$has_tenant" == "false" && "$has_client" == "false" ]]; then
+    log "No Azure/Microsoft tenant ID found in backend/.env. EC2 will start in local admin mode."
+    return
+  fi
+
+  if [[ "$has_tenant" != "$has_client" ]]; then
+    fail "backend/.env has a partial Microsoft/Azure auth configuration. Provide both tenant and client IDs, or remove them to use local admin mode."
   fi
 }
 
@@ -230,8 +251,33 @@ remote_exec_root() {
   ssh $(ssh_opts) "${EC2_USER}@${EC2_HOST}" "sudo bash -lc $(printf '%q' "$*")"
 }
 
-sync_project() {
-  log "Syncing project to ${EC2_USER}@${EC2_HOST}:${REMOTE_DIR}"
+upload_install_script() {
+  REMOTE_BOOTSTRAP_SCRIPT="${REMOTE_BOOTSTRAP_DIR}/install-ec2-prereqs.sh"
+  log "Uploading EC2 prerequisite script to ${EC2_USER}@${EC2_HOST}:${REMOTE_BOOTSTRAP_SCRIPT}"
+  remote_exec "mkdir -p '${REMOTE_BOOTSTRAP_DIR}'"
+  scp -i "$TEMP_PEM" -P "$SSH_PORT" -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new \
+    "${PROJECT_DIR}/${INSTALL_SCRIPT_REL}" \
+    "${EC2_USER}@${EC2_HOST}:${REMOTE_BOOTSTRAP_SCRIPT}"
+}
+
+bootstrap_remote_host() {
+  log "Bootstrapping the EC2 host."
+  upload_install_script
+  ssh $(ssh_opts) "${EC2_USER}@${EC2_HOST}" "sudo bash '${REMOTE_BOOTSTRAP_SCRIPT}'"
+  remote_exec "rm -f '${REMOTE_BOOTSTRAP_SCRIPT}'"
+}
+
+copy_env_files() {
+  remote_exec "mkdir -p '${REMOTE_DIR}/backend'"
+  scp -i "$TEMP_PEM" -P "$SSH_PORT" -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new \
+    "$ROOT_ENV_FILE" \
+    "${EC2_USER}@${EC2_HOST}:${REMOTE_DIR}/.env"
+  scp -i "$TEMP_PEM" -P "$SSH_PORT" -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new \
+    "$BACKEND_ENV_FILE" \
+    "${EC2_USER}@${EC2_HOST}:${REMOTE_DIR}/backend/.env"
+}
+
+sync_project_with_rsync() {
   remote_exec "mkdir -p '${REMOTE_DIR}' '${REMOTE_DIR}/backend' '${REMOTE_DIR}/frontend'"
 
   rsync -az --delete \
@@ -251,13 +297,45 @@ sync_project() {
     --exclude 'test-results/' \
     "${PROJECT_DIR}/" "${EC2_USER}@${EC2_HOST}:${REMOTE_DIR}/"
 
-  rsync -az -e "ssh $(ssh_opts)" "${ROOT_ENV_FILE}" "${EC2_USER}@${EC2_HOST}:${REMOTE_DIR}/.env"
-  rsync -az -e "ssh $(ssh_opts)" "${BACKEND_ENV_FILE}" "${EC2_USER}@${EC2_HOST}:${REMOTE_DIR}/backend/.env"
+  copy_env_files
 }
 
-bootstrap_remote_host() {
-  log "Bootstrapping the EC2 host."
-  remote_exec "cd '${REMOTE_DIR}' && sudo bash '${INSTALL_SCRIPT_REL}'"
+sync_project_with_tar() {
+  local project_parent project_name
+  project_parent="$(dirname "$PROJECT_DIR")"
+  project_name="$(basename "$PROJECT_DIR")"
+
+  log "rsync is unavailable. Using tar to sync the project."
+  remote_exec "rm -rf '${REMOTE_DIR}' && mkdir -p '${REMOTE_DIR}'"
+
+  tar -C "$project_parent" \
+    --exclude="${project_name}/.git" \
+    --exclude="${project_name}/node_modules" \
+    --exclude="${project_name}/backend/node_modules" \
+    --exclude="${project_name}/frontend/node_modules" \
+    --exclude="${project_name}/frontend/dist" \
+    --exclude="${project_name}/backend/dist" \
+    --exclude="${project_name}/frontend/.angular" \
+    --exclude="${project_name}/.env" \
+    --exclude="${project_name}/backend/.env" \
+    --exclude="${project_name}/frontend-serve.err.log" \
+    --exclude="${project_name}/frontend-serve.out.log" \
+    --exclude="${project_name}/artifacts" \
+    --exclude="${project_name}/test-results" \
+    -cpf - "$project_name" \
+    | ssh $(ssh_opts) "${EC2_USER}@${EC2_HOST}" "tar -xpf - --strip-components=1 -C '${REMOTE_DIR}'"
+
+  copy_env_files
+}
+
+sync_project() {
+  log "Syncing project to ${EC2_USER}@${EC2_HOST}:${REMOTE_DIR}"
+
+  if [[ "$SYNC_TOOL" == "rsync" ]]; then
+    sync_project_with_rsync
+  else
+    sync_project_with_tar
+  fi
 }
 
 create_remote_external_volume() {
@@ -296,8 +374,8 @@ main() {
 
   log "Using SSH target ${EC2_USER}@${EC2_HOST}:${SSH_PORT}"
 
-  sync_project
   bootstrap_remote_host
+  sync_project
   create_remote_external_volume
   deploy_remote_stack
 

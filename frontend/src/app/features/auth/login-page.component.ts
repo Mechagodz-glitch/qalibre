@@ -27,19 +27,29 @@ export class LoginPageComponent {
     return this.auth.loginError();
   });
 
+  readonly isLocalMode = computed(() => {
+    const config = this.auth.authConfig();
+    return !config || !config.clientId.trim() || !config.tenantId.trim() || !config.authority.trim();
+  });
+
   readonly isSignedIn = computed(() => this.auth.isAuthenticated());
 
   constructor() {
     const reason = this.route.snapshot.queryParamMap.get('reason');
-    if (this.auth.initialized() && this.isSignedIn() && reason !== 'forbidden') {
-      void this.goToDashboard();
-    }
+    void this.auth.ensureReady().then(() => {
+      if (this.auth.initialized() && this.isSignedIn() && reason !== 'forbidden') {
+        void this.goToDashboard();
+      }
+    }).catch(() => void 0);
   }
 
   async signIn() {
     const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || this.auth.consumeReturnUrl();
     try {
       await this.auth.login(returnUrl);
+      if (this.auth.isAuthenticated()) {
+        await this.router.navigateByUrl(returnUrl || '/');
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Authentication could not be completed.';
       this.auth.setLoginError(message);

@@ -7,10 +7,16 @@
   <main class="login-stage">
     <article class="login-card">
       <div class="brand-tile" aria-hidden="true">
-        <span>QA</span>
+        <img class="brand-icon" src="IconOnly_Transparent_NoBuffer.png">
       </div>
 
-      <h1>Welcome to QAlibre</h1>
+      <h1>
+        @if (isLocalMode()) {
+          Local admin mode
+        } @else {
+          Welcome to QAlibre
+        }
+      </h1>
 
       @if (errorMessage()) {
         <div class="error-banner" role="alert">
@@ -26,16 +32,32 @@
             <span></span>
             <span></span>
           </span>
-          <span>Sign in with Microsoft</span>
+          <span>
+            @if (isLocalMode()) {
+              Enter workspace
+            } @else {
+              Sign in with Microsoft
+            }
+          </span>
         </span>
       </button>
 
-      <p class="subline">Authenticate with your company account</p>
+      <p class="subline">
+        @if (isLocalMode()) {
+          Microsoft SSO is not configured in this deployment. Local admin access is enabled.
+        } @else {
+          Authenticate with your company account
+        }
+      </p>
 
       <div class="divider"></div>
 
       <p class="support-copy">
-        Single Sign-On is required for all accounts. Contact your System Administrator for access credentials.
+        @if (isLocalMode()) {
+          Sign out is session-based in local mode. Refreshing the page restores access.
+        } @else {
+          Single Sign-On is required for all accounts. Contact your System Administrator for access credentials.
+        }
       </p>
     </article>
   </main>

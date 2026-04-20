@@ -19,7 +19,7 @@ import { registerLearningRoutes } from './modules/learning/learning.routes.js';
 import { registerManualExecutionRoutes } from './modules/manual-execution/manual-execution.routes.js';
 import { registerRefinementRoutes } from './modules/refinement/refinement.routes.js';
 import { registerGenerationRoutes } from './modules/test-generation/generation.routes.js';
-import { resolveAuthenticatedUser } from './modules/auth/auth.service.js';
+import { getLocalAuthenticatedUser, resolveAuthenticatedUser } from './modules/auth/auth.service.js';
 import type { AppPageAccessKey } from './modules/auth/auth.constants.js';
 import { forbidden, unauthorized } from './lib/errors.js';
 
@@ -138,6 +138,11 @@ export async function buildApp() {
     }
 
     if (!request.raw.url?.startsWith('/api/')) {
+      return;
+    }
+
+    if (env.AUTH_DISABLED) {
+      request.authUser = getLocalAuthenticatedUser();
       return;
     }
 

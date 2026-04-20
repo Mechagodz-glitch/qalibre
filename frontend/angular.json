@@ -65,10 +65,10 @@
           },
           "configurations": {
             "production": {
-              "buildTarget": "qa-dataset-workbench-frontend:build:production",
+              "buildTarget": "qa-dataset-workbench-frontend:build:production"
             },
             "development": {
-              "buildTarget": "qa-dataset-workbench-frontend:build:development",
+              "buildTarget": "qa-dataset-workbench-frontend:build:development"
             }
           },
           "defaultConfiguration": "development"

@@ -92,6 +92,13 @@ Required backend variables:
 - `OPENAI_API_KEY`
 - `FIGMA_ACCESS_TOKEN` if you want backend Figma ingestion for mockup links
 
+Optional Microsoft/Azure auth variables:
+
+- `AZURE_TENANT_ID` or `MICROSOFT_TENANT_ID`
+- `AZURE_CLIENT_ID` or `MICROSOFT_CLIENT_ID`
+
+If those auth values are omitted, the backend runs in local admin mode instead of Microsoft SSO mode.
+
 Common local default:
 
 ```env
@@ -111,7 +118,7 @@ DEFAULT_ACTOR=local-admin
 
 The frontend does not need a `.env` file for the current local setup. It targets `http://localhost:3000/api`.
 
-If you are using Docker Compose, keep `backend/.env` for the non-database settings such as `OPENAI_API_KEY`. The Compose stack overrides `DATABASE_URL` automatically so the backend container talks to the `postgres` container instead of `localhost`.
+If you are using Docker Compose, keep `backend/.env` for the non-database settings such as `OPENAI_API_KEY`. The Compose stack overrides `DATABASE_URL` automatically so the backend container talks to the `postgres` container instead of `localhost`. If you leave out the Microsoft/Azure auth settings, the stack uses local admin mode.
 
 ## WSL Ubuntu Setup
 

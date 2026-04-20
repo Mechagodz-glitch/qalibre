@@ -1,5 +1,5 @@
-#!/bin/sh
-set -eu
+#!/usr/bin/env bash
+set -Eeuo pipefail
 
 PACKAGE_HASH_FILE="node_modules/.package-json.sha256"
 CURRENT_HASH="$(sha256sum package.json | awk '{print $1}')"
@@ -22,8 +22,13 @@ npx prisma generate
 echo "[backend] Applying Prisma migrations"
 npx prisma migrate deploy
 
-echo "[backend] Seeding starter data"
-npm run prisma:seed:docker
-
 echo "[backend] Starting Fastify server"
+(
+  sleep 2
+  echo "[backend] Seeding starter data"
+  if ! npm run prisma:seed:docker; then
+    echo "[backend] Seed failed; continuing with the server startup" >&2
+  fi
+) &
+
 npm run dev

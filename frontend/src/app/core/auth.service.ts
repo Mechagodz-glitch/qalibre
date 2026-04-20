@@ -136,10 +136,21 @@ export class AuthService {
     return user.pageAccesses.includes(pageKey);
   }
 
+  private isLocalAuthMode(config: AuthConfig | null = this.authConfigState()) {
+    return !config || !config.clientId.trim() || !config.tenantId.trim() || !config.authority.trim();
+  }
+
   async login(returnUrl = '/') {
     await this.ensureReady();
     const config = this.authConfigState();
     const instance = this.msalState();
+
+    if (this.isLocalAuthMode(config)) {
+      this.clearSession();
+      this.authErrorState.set(null);
+      await this.refreshCurrentUser();
+      return;
+    }
 
     if (!config || !instance) {
       throw new Error(this.authErrorState() ?? 'Authentication is not ready yet.');
@@ -167,6 +178,11 @@ export class AuthService {
     this.clearSession();
     this.authErrorState.set(null);
 
+    if (this.isLocalAuthMode()) {
+      this.currentUserState.set(null);
+      return;
+    }
+
     if (instance) {
       await instance.clearCache().catch(() => void 0);
       instance.setActiveAccount(null);
@@ -186,6 +202,14 @@ export class AuthService {
   async completeRedirect() {
     await this.ensureReady();
     const instance = this.msalState();
+
+    if (this.isLocalAuthMode()) {
+      this.authErrorState.set(null);
+      if (!this.currentUserState()) {
+        await this.refreshCurrentUser();
+      }
+      return this.currentUserState();
+    }
 
     if (!instance) {
       throw new Error('Authentication is not ready yet.');
@@ -257,6 +281,12 @@ export class AuthService {
       this.http.get<AuthConfig>(`${stripTrailingSlash(environment.apiBaseUrl)}/auth/config`),
     );
     this.authConfigState.set(config);
+
+    if (this.isLocalAuthMode(config)) {
+      this.msalState.set(null);
+      await this.fetchCurrentUser();
+      return;
+    }
 
     const instance = new PublicClientApplication(this.toMsalConfig(config));
     await instance.initialize();
