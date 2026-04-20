@@ -1,0 +1,206 @@
+<section class="manual-report-page">
+  @if (loading()) {
+    <section class="centered-state">
+      <mat-spinner diameter="42"></mat-spinner>
+    </section>
+  } @else if (!report()) {
+    <app-empty-state title="Report unavailable" description="The requested manual execution report could not be loaded." />
+  } @else {
+    <app-page-header
+      [title]="report()!.run.name"
+      eyebrow="Execution report"
+      [description]="'Review execution outcomes, failure hotspots, and suite progress before exporting or printing the final run report.'"
+    >
+      <button
+        mat-stroked-button
+        class="report-action report-action--blue"
+        type="button"
+        [routerLink]="['/manual-execution/test-execution', report()!.run.id]"
+      >
+        Back to Run
+      </button>
+      <button mat-stroked-button class="report-action report-action--blue" type="button" (click)="printReport()">
+        Download PDF
+      </button>
+      <button mat-flat-button class="report-action report-action--green" type="button" (click)="exportWorkbook()">
+        Export Workbook
+      </button>
+    </app-page-header>
+
+    <section class="print-summary-heading" aria-hidden="true">
+      <h2>Test Execution Summary</h2>
+    </section>
+
+    <mat-card class="report-card info-card">
+      <mat-card-content class="info-card__content">
+        <div class="card-head">
+          <div>
+            <p class="section-eyebrow">Run context</p>
+            <h3>Execution details</h3>
+            @if (formatScope(report()!.run)) {
+              <p class="info-card__scope">{{ formatScope(report()!.run) }}</p>
+            }
+          </div>
+        </div>
+
+        <div class="info-grid">
+          <article class="info-tile">
+            <span>Project</span>
+            <strong>{{ report()!.run.project.name }}</strong>
+          </article>
+          <article class="info-tile">
+            <span>Run status</span>
+            <app-status-badge [status]="report()!.run.status" [label]="statusLabel(report()!.run.status)"></app-status-badge>
+          </article>
+          <article class="info-tile">
+            <span>Module</span>
+            <strong>{{ report()!.run.module?.name || 'Mixed selection' }}</strong>
+          </article>
+          <article class="info-tile">
+            <span>Page</span>
+            <strong>{{ report()!.run.page?.name || 'Mixed selection' }}</strong>
+          </article>
+          <article class="info-tile">
+            <span>Feature</span>
+            <strong>{{ report()!.run.feature?.name || 'Mixed selection' }}</strong>
+          </article>
+          <article class="info-tile">
+            <span>Created</span>
+            <strong>{{ formatDate(report()!.run.createdAt) }}</strong>
+          </article>
+          <article class="info-tile">
+            <span>Completed</span>
+            <strong>{{ formatDate(report()!.run.completedAt) }}</strong>
+          </article>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <section class="report-grid">
+      <mat-card class="report-card hero-card">
+        <mat-card-content class="hero-card__content">
+          <div class="donut-block">
+            <div class="donut-chart" [style.background]="donutGradient()">
+              <div class="donut-chart__center">
+                <strong>{{ report()!.run.totals.completionPercent }}%</strong>
+                <span>complete</span>
+              </div>
+            </div>
+
+            <div class="donut-legend">
+              @for (item of report()!.charts.statusBreakdown; track item.label) {
+                <div class="legend-row">
+                  <span class="legend-swatch" [style.background]="item.color"></span>
+                  <div>
+                    <strong>{{ item.label }}</strong>
+                    <span>{{ item.value }} cases</span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="hero-copy">
+            <p class="section-eyebrow">Execution overview</p>
+            <h2>{{ report()!.run.suiteCount }} suites | {{ report()!.run.totals.total }} cases</h2>
+            <div class="hero-kpis">
+              <article>
+                <strong>{{ report()!.run.totals.passed }}</strong>
+                <span>Passed</span>
+              </article>
+              <article>
+                <strong>{{ report()!.run.totals.failed }}</strong>
+                <span>Failed</span>
+              </article>
+              <article>
+                <strong>{{ report()!.run.totals.skipped }}</strong>
+                <span>Skipped</span>
+              </article>
+              <article>
+                <strong>{{ report()!.run.totals.untested }}</strong>
+                <span>Untested</span>
+              </article>
+            </div>
+
+            <div class="suite-list">
+              @for (suite of report()!.run.suites; track suite.id) {
+                <span>{{ suite.suiteTitle }}</span>
+              }
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </section>
+
+    <mat-card class="report-card report-table-card">
+      <mat-card-content>
+        <div class="card-head">
+          <div>
+            <p class="section-eyebrow">Detailed results</p>
+            <h3>Executed testcase outcomes</h3>
+          </div>
+        </div>
+
+        <div class="table-wrap table-wrap--screen">
+          <table class="result-table result-table--compact">
+            <thead>
+              <tr>
+                <th>Case ID</th>
+                <th>Title</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (caseResult of report()!.caseResults; track caseResult.id) {
+                <tr>
+                  <td>{{ caseResult.sourceCaseId }}</td>
+                  <td>{{ caseResult.title }}</td>
+                  <td>
+                    <app-status-badge [status]="caseResult.status" [label]="caseResult.status"></app-status-badge>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="table-wrap table-wrap--print">
+          <table class="result-table result-table--full">
+            <thead>
+              <tr>
+                <th>Suite</th>
+                <th>Case ID</th>
+                <th>Title</th>
+                <th>Feature</th>
+                <th>Scenario</th>
+                <th>Test Type</th>
+                <th>Status</th>
+                <th>Comment</th>
+                <th>Defect Link</th>
+                <th>Executed By</th>
+                <th>Executed At</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (caseResult of report()!.caseResults; track caseResult.id) {
+                <tr>
+                  <td>{{ caseResult.suiteTitle }}</td>
+                  <td>{{ caseResult.sourceCaseId }}</td>
+                  <td>{{ caseResult.title }}</td>
+                  <td>{{ caseResult.feature }}</td>
+                  <td>{{ caseResult.scenario }}</td>
+                  <td>{{ caseResult.testType }}</td>
+                  <td><span class="print-status">{{ caseStatusLabel(caseResult.status) }}</span></td>
+                  <td>{{ caseResult.comment || '-' }}</td>
+                  <td>{{ caseResult.defectLink || '-' }}</td>
+                  <td>{{ caseResult.executedBy || '-' }}</td>
+                  <td>{{ formatDate(caseResult.executedAt) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+</section>

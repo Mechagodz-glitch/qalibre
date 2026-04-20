@@ -1,0 +1,981 @@
+<section class="admin-shell">
+  @if (loading()) {
+    <div class="loading-state">
+      <mat-progress-spinner diameter="36" mode="indeterminate" />
+    </div>
+  } @else {
+    <nav class="admin-tabs" aria-label="Admin sections">
+      <button
+        type="button"
+        class="admin-tab"
+        [class.active]="activeSection() === 'uam'"
+        (click)="openSection('uam')"
+      >
+        <span class="admin-tab__label">UAM</span>
+        <span class="admin-tab__hint">Users, access, and QA tester status</span>
+      </button>
+
+      <button
+        type="button"
+        class="admin-tab"
+        [class.active]="activeSection() === 'mapping'"
+        (click)="openSection('mapping')"
+      >
+        <span class="admin-tab__label">Client Mapping and Resource Allocation</span>
+        <span class="admin-tab__hint">Clients, modules, and quarter-wise staffing</span>
+      </button>
+    </nav>
+
+    @if (activeSection() === 'uam') {
+      <section id="uam-section" class="workspace-section">
+        <mat-card class="workspace-card workspace-card--users">
+          <div class="card-header">
+            <div>
+              <p class="section-label">UAM</p>
+              <h2>Registered users</h2>
+            </div>
+            <div class="header-actions">
+              <label class="toolbar-search toolbar-search--users" aria-label="Search users">
+                <span class="field-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path
+                      d="M10.5 4a6.5 6.5 0 1 0 4.03 11.6l4.43 4.43 1.41-1.41-4.43-4.43A6.5 6.5 0 0 0 10.5 4Zm0 2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Z"
+                    />
+                  </svg>
+                </span>
+                <input
+                  [value]="userSearchTerm()"
+                  (input)="setUserSearchTerm($any($event.target).value)"
+                  placeholder="Search users"
+                  aria-label="Search users"
+                />
+              </label>
+              <button type="button" class="header-action header-action--primary" (click)="startNewUser()">
+                <span class="button-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M11 5h2v14h-2zM5 11h14v2H5z" />
+                  </svg>
+                </span>
+                <span class="header-action__label">Add user</span>
+              </button>
+              <span class="count-pill">{{ filteredUsers().length }} users</span>
+            </div>
+          </div>
+
+          <div class="uam-stack">
+            <div class="user-table-shell">
+              <div class="user-table">
+                <div class="user-table__head">
+                  <span>Name</span>
+                  <span>Email</span>
+                  <span>Role</span>
+                  <span>Status</span>
+                  <span>Accesses</span>
+                  <span>QA tester</span>
+                  <span>Actions</span>
+                </div>
+
+                <div class="user-table__body">
+                  @if (filteredUsers().length) {
+                    @for (user of filteredUsers(); track user.id) {
+                      <article
+                        class="user-table__row"
+                        [class.active]="selectedUserId() === user.id"
+                        (click)="selectUser(user)"
+                        role="button"
+                        tabindex="0"
+                        (keydown.enter)="selectUser(user)"
+                        (keydown.space)="$event.preventDefault(); selectUser(user)"
+                      >
+                        <div class="user-table__cell user-table__cell--name">
+                          <strong>{{ user.name }}</strong>
+                        </div>
+
+                        <div class="user-table__cell user-table__cell--email">
+                          <span>{{ user.email }}</span>
+                        </div>
+
+                        <div class="user-table__cell user-table__cell--role">
+                          @if (user.contributor?.roleTitle) {
+                            <span class="role-tag designation">{{ user.contributor?.roleTitle }}</span>
+                          }
+                          <span class="role-tag" [class.admin]="user.role === 'ADMIN'">{{ user.role }}</span>
+                        </div>
+
+                        <div class="user-table__cell user-table__cell--status">
+                          <span class="status-tag" [class.inactive]="!user.isActive">
+                            {{ user.isActive ? 'Active' : 'Inactive' }}
+                          </span>
+                        </div>
+
+                        <div class="user-table__cell user-table__cell--accesses">
+                          <span class="access-summary">{{ accessSummary(user) }}</span>
+                        </div>
+
+                        <div class="user-table__cell user-table__cell--qa">
+                          <mat-checkbox [checked]="isQaTesterUser(user)" disabled></mat-checkbox>
+                        </div>
+
+                        <div class="user-table__cell user-table__cell--actions" (click)="$event.stopPropagation()">
+                          <button
+                            type="button"
+                            class="table-icon-button table-icon-button--edit"
+                            [attr.aria-label]="'Edit ' + user.name"
+                            (click)="selectUser(user)"
+                          >
+                            <span class="icon-svg" aria-hidden="true">
+                              <svg viewBox="0 0 24 24">
+                                <path
+                                  d="M3 17.25V21h3.75l11.06-11.06-3.75-3.75L3 17.25Zm2.92 1.83H5v-.92l8.06-8.06.92.92-8.06 8.06ZM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.48 1.48 3.75 3.75 1.48-1.48Z"
+                                />
+                              </svg>
+                            </span>
+                          </button>
+
+                          @if (user.role !== 'ADMIN' && user.id !== currentUserId()) {
+                            <button
+                              type="button"
+                              class="table-icon-button table-icon-button--danger"
+                              [attr.aria-label]="'Delete ' + user.name"
+                              (click)="deleteUser(user, $event)"
+                            >
+                              <span class="icon-svg" aria-hidden="true">
+                                <svg viewBox="0 0 24 24">
+                                  <path
+                                    d="M16 9v10H8V9h8Zm-1.5-6-1 1H10.5l-1-1H5v2h14V3h-4.5ZM18 7H6v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7Z"
+                                  />
+                                </svg>
+                              </span>
+                            </button>
+                          }
+                        </div>
+                      </article>
+                    }
+                  } @else {
+                    <div class="empty-notice empty-notice--inline">
+                      <strong>No users found</strong>
+                      <p>Search by name or email to narrow the directory.</p>
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        </mat-card>
+
+        @if (userEditorOpen()) {
+          <div class="editor-backdrop" (click)="closeUserEditor()">
+            <mat-card class="editor-modal" (click)="$event.stopPropagation()">
+              <div class="card-header">
+                <div>
+                  <p class="section-label">User form</p>
+                  <h2>{{ selectedUser() ? 'Edit user' : 'Add user' }}</h2>
+                </div>
+                <button
+                  type="button"
+                  class="modal-close"
+                  aria-label="Close user editor"
+                  (click)="closeUserEditor()"
+                >
+                <span class="icon-svg" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12 19 6.4 17.6 5 12 10.6 6.4 5Z" />
+                    </svg>
+                  </span>
+                </button>
+              </div>
+
+              <form class="user-form" [formGroup]="userForm" (ngSubmit)="submitUser()">
+                <div class="grid-two">
+                  <mat-form-field appearance="outline" floatLabel="always">
+                    <mat-label>Email</mat-label>
+                    <input matInput formControlName="email" />
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline" floatLabel="always">
+                    <mat-label>Name</mat-label>
+                    <input matInput formControlName="name" />
+                  </mat-form-field>
+                </div>
+
+                <div class="grid-two">
+                  <mat-form-field appearance="outline" floatLabel="always">
+                    <mat-label>Role</mat-label>
+                    <mat-select formControlName="role">
+                      @for (option of roleOptions; track option.value) {
+                        <mat-option [value]="option.value">{{ option.label }} - {{ option.hint }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+
+                  <div class="checkbox-stack">
+                    <mat-checkbox formControlName="isActive">Active user</mat-checkbox>
+                    <mat-checkbox formControlName="qaTester">QA tester</mat-checkbox>
+                  </div>
+                </div>
+
+                @if (userForm.controls.qaTester.value) {
+                  <mat-form-field appearance="outline" floatLabel="always">
+                    <mat-label>QA tester designation</mat-label>
+                    <input matInput formControlName="designation" placeholder="QA Tester" />
+                  </mat-form-field>
+                }
+
+                <section class="access-panel">
+                  <div class="access-panel__header">
+                    <div>
+                      <p class="section-label">Page access</p>
+                      <h3>Sidebar visibility</h3>
+                    </div>
+                    <span class="access-note">Dashboard access is always included.</span>
+                  </div>
+
+                  <div class="access-grid">
+                    @for (definition of pageAccessDefinitions(); track definition.key) {
+                    <label
+                      class="access-item"
+                      [class.disabled]="
+                        definition.key === 'dashboard' ||
+                        (definition.key !== 'admin' && userForm.controls.role.value === 'ADMIN')
+                      "
+                    >
+                      <input
+                        type="checkbox"
+                        [checked]="isAccessSelected(definition.key)"
+                        [disabled]="
+                          definition.key === 'dashboard' ||
+                          (definition.key !== 'admin' && userForm.controls.role.value === 'ADMIN')
+                        "
+                        (change)="toggleAccess(definition, $any($event.target).checked)"
+                      />
+                        <span class="access-label">
+                          <strong>{{ definition.label }}</strong>
+                          <small>{{ definition.description }}</small>
+                        </span>
+                      </label>
+                    }
+                  </div>
+                </section>
+
+                <div class="actions actions--split">
+                  <button mat-stroked-button type="button" (click)="closeUserEditor()" [disabled]="savingUser()">
+                    Cancel
+                  </button>
+                  <button mat-flat-button color="primary" type="submit" [disabled]="savingUser()">
+                    {{ savingUser() ? 'Saving...' : selectedUser() ? 'Update user' : 'Create user' }}
+                  </button>
+                </div>
+              </form>
+            </mat-card>
+          </div>
+        }
+      </section>
+    }
+
+    @if (activeSection() === 'mapping') {
+      <section id="client-mapping-section" class="workspace-section">
+        <mat-card class="workspace-card workspace-card--client-directory">
+          <div class="mapping-directory-header">
+            <div>
+              <p class="section-label">Client mapping</p>
+              <h2>Client details</h2>
+            </div>
+            <div class="mapping-directory-header__actions">
+              <label class="toolbar-search client-search" aria-label="Search clients">
+                <span class="field-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path
+                      d="M10.5 4a6.5 6.5 0 1 0 4.03 11.6l4.43 4.43 1.41-1.41-4.43-4.43A6.5 6.5 0 0 0 10.5 4Zm0 2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Z"
+                    />
+                  </svg>
+                </span>
+                <input
+                  [value]="clientRegistrySearchTerm()"
+                  (input)="setClientRegistrySearchTerm($any($event.target).value)"
+                  placeholder="Search clients"
+                  aria-label="Search clients"
+                />
+              </label>
+
+              <div class="client-toolbar__filters">
+                <mat-form-field appearance="outline" floatLabel="always">
+                  <mat-label>Client type</mat-label>
+                  <mat-select
+                    [value]="clientRegistryTypeFilter()"
+                    (selectionChange)="setClientRegistryTypeFilter($event.value)"
+                  >
+                    <mat-option value="all">All clients</mat-option>
+                    <mat-option value="withModules">With modules</mat-option>
+                    <mat-option value="withoutModules">No modules</mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" floatLabel="always">
+                  <mat-label>Module filter</mat-label>
+                  <mat-select
+                    [value]="clientRegistryModuleFilter()"
+                    (selectionChange)="setClientRegistryModuleFilter($event.value)"
+                  >
+                    <mat-option value="all">All list modules</mat-option>
+                    @for (moduleItem of moduleFilterOptions(); track moduleItem.id) {
+                      <mat-option [value]="moduleItem.id">{{ moduleItem.name }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              </div>
+              <button type="button" class="header-action header-action--primary" (click)="openMappingCreate()">
+                <span class="button-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M11 5h2v14h-2zM5 11h14v2H5z" />
+                  </svg>
+                </span>
+                <span class="header-action__label">Create</span>
+              </button>
+            </div>
+          </div>
+
+            <div class="client-table-shell client-table-shell--directory">
+              @if (filteredProjectOptions().length) {
+                <div class="client-table-scroll client-table-scroll--directory">
+                  <table class="client-registry-table client-registry-table--directory">
+                    <colgroup>
+                      <col class="col-client-name" />
+                      <col class="col-client-modules" />
+                      <col class="col-client-pages" />
+                      <col class="col-client-features" />
+                      <col class="col-client-quarter" />
+                      <col class="col-client-testers" />
+                      <col class="col-client-actions" />
+                    </colgroup>
+                    <thead>
+                      <tr>
+                        <th>Client Name</th>
+                        <th>Modules</th>
+                        <th>Pages</th>
+                        <th>Features</th>
+                        <th>Quarter</th>
+                        <th>QA Tester</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (project of filteredProjectOptions(); track project.id) {
+                        <tr [class.client-row--expanded]="isProjectExpanded(project.id)">
+                          <td>
+                            <div class="client-registry-table__name">
+                              <button
+                                type="button"
+                                class="client-registry-table__toggle"
+                                [class.is-expanded]="isProjectExpanded(project.id)"
+                                [attr.aria-label]="(isProjectExpanded(project.id) ? 'Collapse ' : 'Expand ') + project.name"
+                                (click)="toggleProjectExpansion(project.id, $event)"
+                              >
+                                <svg viewBox="0 0 20 20" aria-hidden="true">
+                                  <path d="M7 4.75 12.25 10 7 15.25" />
+                                </svg>
+                              </button>
+                              <strong>{{ project.name }}</strong>
+                            </div>
+                          </td>
+                          <td>
+                            <span class="client-registry-table__count">{{ projectModuleCount(project) }}</span>
+                          </td>
+                          <td>
+                            <span class="client-registry-table__count">{{ projectPageCount(project) }}</span>
+                          </td>
+                          <td>
+                            <span class="client-registry-table__count">{{ projectFeatureCount(project) }}</span>
+                          </td>
+                          <td>
+                            <span class="client-registry-table__quarter">{{ projectQuarterSummary(project.id) }}</span>
+                          </td>
+                          <td>
+                            <span class="client-registry-table__testers">{{ projectTesterSummary(project.id) }}</span>
+                          </td>
+                          <td>
+                            <div class="client-registry-table__actions">
+                              <button
+                                type="button"
+                                class="table-icon-button table-icon-button--edit"
+                                [attr.aria-label]="'Edit client ' + project.name"
+                                (click)="startProjectEdit(project, $event)"
+                              >
+                                <span class="icon-svg" aria-hidden="true">
+                                  <svg viewBox="0 0 24 24">
+                                    <path
+                                      d="M3 17.25V21h3.75l11.06-11.06-3.75-3.75L3 17.25Zm2.92 1.83H5v-.92l8.06-8.06.92.92-8.06 8.06ZM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.48 1.48 3.75 3.75 1.48-1.48Z"
+                                    />
+                                  </svg>
+                                </span>
+                              </button>
+                              <button
+                                type="button"
+                                class="table-icon-button table-icon-button--danger"
+                                [attr.aria-label]="'Delete client ' + project.name"
+                                (click)="deleteProject(project.id, $event)"
+                              >
+                                <span class="icon-svg" aria-hidden="true">
+                                  <svg viewBox="0 0 24 24">
+                                    <path d="M9 3h6l1 1h4v2H4V4h4l1-1Zm1 6h2v8h-2V9Zm4 0h2v8h-2V9ZM7 9h2v8H7V9Zm-1 12a2 2 0 0 1-2-2V7h16v12a2 2 0 0 1-2 2H6Z" />
+                                  </svg>
+                                </span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                        @if (isProjectExpanded(project.id)) {
+                          <tr class="client-registry-table__detail-row">
+                            <td colspan="7">
+                              <div class="client-expansion">
+                                @if (projectExecutionRows(project).length) {
+                                  @for (moduleRow of projectExecutionRows(project); track moduleRow.moduleId) {
+                                    <section class="client-expansion__module">
+                                      <div class="client-expansion__module-head">
+                                        <div class="client-expansion__module-copy">
+                                          <strong>{{ moduleRow.moduleName }}</strong>
+                                        </div>
+                                        <span class="client-expansion__tester">{{ moduleRow.testerLabel }}</span>
+                                      </div>
+
+                                      @if (moduleRow.pages.length) {
+                                        <div class="client-expansion__pages">
+                                          @for (pageRow of moduleRow.pages; track pageRow.pageId) {
+                                            <div class="client-expansion__page">
+                                              <div class="client-expansion__page-copy">
+                                                <span class="client-expansion__page-name">{{ pageRow.pageName }}</span>
+                                                @if (pageRow.features.length) {
+                                                  <div class="client-expansion__features">
+                                                    @for (featureRow of pageRow.features; track featureRow.featureId) {
+                                                      <span class="client-expansion__feature-chip">{{ featureRow.featureName }}</span>
+                                                    }
+                                                  </div>
+                                                } @else {
+                                                  <span class="client-expansion__empty">No features mapped for this page.</span>
+                                                }
+                                              </div>
+                                              <span class="client-expansion__page-tester">{{ pageRow.testerLabel }}</span>
+                                            </div>
+                                          }
+                                        </div>
+                                      } @else {
+                                        <div class="client-expansion__empty">No pages created for this module.</div>
+                                      }
+                                    </section>
+                                  }
+                                } @else {
+                                  <div class="client-expansion__empty">No modules created for this client.</div>
+                                }
+                              </div>
+                            </td>
+                          </tr>
+                        }
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              } @else {
+                <div class="empty-notice empty-notice--inline">
+                  <strong>No clients found</strong>
+                  <p>Search by client name or module to narrow the directory.</p>
+                </div>
+              }
+            </div>
+
+            @if (mappingEditorOpen()) {
+              <div class="mapping-editor-backdrop" (click)="closeMappingEditor()">
+                <mat-card class="mapping-editor-modal" (click)="$event.stopPropagation()">
+                  <div class="mapping-editor-modal__bar">
+                    <button
+                      type="button"
+                      class="mapping-editor-icon"
+                      aria-label="Close editor"
+                      (click)="closeMappingEditor()"
+                    >
+                      <span class="icon-svg" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                          <path d="m14.41 7.41-1.41-1.41L7 12l6 6 1.41-1.41L9.83 12z" />
+                        </svg>
+                      </span>
+                    </button>
+                    <h2>{{ mappingEditorMode() === 'edit' ? 'Edit entity' : 'Create new entity' }}</h2>
+                    <button
+                      type="button"
+                      class="mapping-editor-icon"
+                      aria-label="Close editor"
+                      (click)="closeMappingEditor()"
+                    >
+                      <span class="icon-svg" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                          <path d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12 19 6.4 17.6 5 12 10.6 6.4 5Z" />
+                        </svg>
+                      </span>
+                    </button>
+                  </div>
+
+                  <form class="mapping-editor-form" (submit)="$event.preventDefault()">
+                    <section class="mapping-step">
+                      <div class="mapping-step__header">
+                        <span class="mapping-step__badge">1</span>
+                        <h3>Client</h3>
+                        <div class="mapping-step__spacer"></div>
+                        @if (editingProjectId()) {
+                          <button
+                            type="button"
+                            class="table-icon-button table-icon-button--danger"
+                            aria-label="Delete client"
+                            (click)="deleteEditingProject()"
+                          >
+                            <span class="icon-svg" aria-hidden="true">
+                              <svg viewBox="0 0 24 24">
+                                <path d="M9 3h6l1 1h4v2H4V4h4l1-1Zm1 6h2v8h-2V9Zm4 0h2v8h-2V9ZM7 9h2v8H7V9Zm-1 12a2 2 0 0 1-2-2V7h16v12a2 2 0 0 1-2 2H6Z" />
+                              </svg>
+                            </span>
+                          </button>
+                        }
+                      </div>
+
+                      <div class="mapping-editor-grid mapping-editor-grid--two">
+                        <mat-form-field appearance="outline" floatLabel="always">
+                          <mat-label>Client name</mat-label>
+                          <input matInput [formControl]="projectForm.controls.name" />
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" floatLabel="always">
+                          <mat-label>Client description</mat-label>
+                          <input matInput [formControl]="projectForm.controls.description" />
+                        </mat-form-field>
+                      </div>
+
+                      <div class="mapping-editor-grid mapping-editor-grid--three">
+                        <mat-form-field appearance="outline" floatLabel="always">
+                          <mat-label>Quarter</mat-label>
+                          <mat-select [formControl]="allocationForm.controls.quarters" multiple>
+                            @for (quarter of quarterOptions; track quarter.value) {
+                              <mat-option [value]="quarter.value">{{ quarter.label }}</mat-option>
+                            }
+                          </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" floatLabel="always">
+                          <mat-label>Year</mat-label>
+                          <mat-select [formControl]="allocationForm.controls.years" multiple>
+                            @for (year of allocationYearOptions(); track year) {
+                              <mat-option [value]="year">{{ year }}</mat-option>
+                            }
+                          </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" floatLabel="always">
+                          <mat-label>QA testers</mat-label>
+                          <mat-select [formControl]="allocationForm.controls.testerContributorIds" multiple>
+                            @for (tester of testerOptions(); track tester.id) {
+                              <mat-option [value]="tester.id">
+                                {{ tester.name }}
+                                @if (tester.roleTitle) {
+                                  <span class="option-hint">- {{ tester.roleTitle }}</span>
+                                }
+                              </mat-option>
+                            }
+                          </mat-select>
+                        </mat-form-field>
+                      </div>
+
+                      <div class="mapping-step__actions">
+                        <button mat-flat-button color="primary" type="button" (click)="saveClientSection()" [disabled]="savingProject()">
+                          {{ savingProject() ? 'Saving client...' : 'Save client' }}
+                        </button>
+                      </div>
+                    </section>
+
+                    <section class="mapping-step">
+                      <div class="mapping-step__header">
+                        <span class="mapping-step__badge">2</span>
+                        <h3>Module</h3>
+                        <div class="mapping-step__spacer"></div>
+                        @if (mappingProject(); as activeMappingProject) {
+                          <button
+                            type="button"
+                            class="mapping-step__ghost-action"
+                            (click)="prepareNewModule($event)"
+                          >
+                            New module
+                          </button>
+                        }
+                        @if (editingModuleId()) {
+                          <button
+                            type="button"
+                            class="table-icon-button table-icon-button--danger"
+                            aria-label="Delete module"
+                            (click)="deleteEditingModule()"
+                          >
+                            <span class="icon-svg" aria-hidden="true">
+                              <svg viewBox="0 0 24 24">
+                                <path d="M9 3h6l1 1h4v2H4V4h4l1-1Zm1 6h2v8h-2V9Zm4 0h2v8h-2V9ZM7 9h2v8H7V9Zm-1 12a2 2 0 0 1-2-2V7h16v12a2 2 0 0 1-2 2H6Z" />
+                              </svg>
+                            </span>
+                          </button>
+                        }
+                      </div>
+
+                      @if (mappingProject(); as activeMappingProject) {
+                        <div class="mapping-entity-list">
+                          <div class="mapping-entity-list__label">Existing modules for {{ activeMappingProject.name }}</div>
+                          @if (mappingModuleOptions().length) {
+                            <div class="mapping-entity-list__items">
+                              @for (moduleItem of mappingModuleOptions(); track moduleItem.id) {
+                                <article
+                                  class="mapping-entity-row"
+                                  [class.is-active]="isMappingModuleSelected(moduleItem.id)"
+                                >
+                                  <button
+                                    type="button"
+                                    class="mapping-entity-row__select"
+                                    (click)="selectMappingModule(moduleItem.id, $event)"
+                                  >
+                                    <span class="mapping-entity-row__title">{{ moduleItem.name }}</span>
+                                    <span class="mapping-entity-row__meta">{{ moduleItem.pages.length }} pages</span>
+                                  </button>
+                                  <div class="mapping-entity-row__actions">
+                                    <button
+                                      type="button"
+                                      class="table-icon-button table-icon-button--edit"
+                                      [attr.aria-label]="'Edit module ' + moduleItem.name"
+                                      (click)="startModuleEdit(activeMappingProject, moduleItem, $event)"
+                                    >
+                                      <span class="icon-svg" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24">
+                                          <path
+                                            d="M3 17.25V21h3.75l11.06-11.06-3.75-3.75L3 17.25Zm2.92 1.83H5v-.92l8.06-8.06.92.92-8.06 8.06ZM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.48 1.48 3.75 3.75 1.48-1.48Z"
+                                          />
+                                        </svg>
+                                      </span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      class="table-icon-button table-icon-button--danger"
+                                      [attr.aria-label]="'Delete module ' + moduleItem.name"
+                                      (click)="deleteModule(moduleItem.id, moduleItem.name, $event)"
+                                    >
+                                      <span class="icon-svg" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24">
+                                          <path d="M9 3h6l1 1h4v2H4V4h4l1-1Zm1 6h2v8h-2V9Zm4 0h2v8h-2V9ZM7 9h2v8H7V9Zm-1 12a2 2 0 0 1-2-2V7h16v12a2 2 0 0 1-2 2H6Z" />
+                                        </svg>
+                                      </span>
+                                    </button>
+                                  </div>
+                                </article>
+                              }
+                            </div>
+                          } @else {
+                            <div class="mapping-entity-list__empty">No modules created for this client yet.</div>
+                          }
+                        </div>
+                      }
+
+                      <div class="mapping-editor-grid mapping-editor-grid--three">
+                        <mat-form-field appearance="outline" floatLabel="always">
+                          <mat-label>Client</mat-label>
+                          <mat-select
+                            [formControl]="moduleForm.controls.projectId"
+                            [disabled]="isScopedClientEdit()"
+                            (selectionChange)="onMappingModuleProjectChange($event.value)"
+                          >
+                            @for (project of projectOptions(); track project.id) {
+                              <mat-option [value]="project.id">{{ project.name }}</mat-option>
+                            }
+                          </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" floatLabel="always">
+                          <mat-label>Module name</mat-label>
+                          <input matInput [formControl]="moduleForm.controls.name" />
+                        </mat-form-field>
+                      </div>
+
+                      <div class="mapping-step__actions">
+                        <button mat-flat-button color="primary" type="button" (click)="saveModuleSection()" [disabled]="savingModule()">
+                          {{ savingModule() ? 'Saving module...' : 'Save module' }}
+                        </button>
+                      </div>
+                    </section>
+
+                    <section class="mapping-step">
+                      <div class="mapping-step__header">
+                        <span class="mapping-step__badge">3</span>
+                        <h3>Page</h3>
+                        <div class="mapping-step__spacer"></div>
+                        @if (mappingProject()) {
+                          <button
+                            type="button"
+                            class="mapping-step__ghost-action"
+                            (click)="prepareNewPage($event)"
+                          >
+                            New page
+                          </button>
+                        }
+                        @if (editingPageId()) {
+                          <button
+                            type="button"
+                            class="table-icon-button table-icon-button--danger"
+                            aria-label="Delete page"
+                            (click)="deleteEditingPage()"
+                          >
+                            <span class="icon-svg" aria-hidden="true">
+                              <svg viewBox="0 0 24 24">
+                                <path d="M9 3h6l1 1h4v2H4V4h4l1-1Zm1 6h2v8h-2V9Zm4 0h2v8h-2V9ZM7 9h2v8H7V9Zm-1 12a2 2 0 0 1-2-2V7h16v12a2 2 0 0 1-2 2H6Z" />
+                              </svg>
+                            </span>
+                          </button>
+                        }
+                      </div>
+
+                      @if (pageForm.controls.moduleId.value || mappingPageOptions().length || editingPageId()) {
+                        <div class="mapping-entity-list">
+                          <div class="mapping-entity-list__label">
+                            Existing pages
+                            @if (selectedPageModuleName()) {
+                              <span class="mapping-entity-list__context">
+                                for {{ selectedPageModuleName() }}
+                              </span>
+                            }
+                          </div>
+                          @if (mappingPageOptions().length) {
+                            <div class="mapping-entity-list__items">
+                              @for (pageItem of mappingPageOptions(); track pageItem.id) {
+                                <article
+                                  class="mapping-entity-row"
+                                  [class.is-active]="isMappingPageSelected(pageItem.id)"
+                                >
+                                  <button
+                                    type="button"
+                                    class="mapping-entity-row__select"
+                                    (click)="selectMappingPage(pageItem.id, $event)"
+                                  >
+                                    <span class="mapping-entity-row__title">{{ pageItem.name }}</span>
+                                  </button>
+                                  <div class="mapping-entity-row__actions">
+                                    <button
+                                      type="button"
+                                      class="table-icon-button table-icon-button--edit"
+                                      [attr.aria-label]="'Edit page ' + pageItem.name"
+                                      (click)="selectMappingPage(pageItem.id, $event)"
+                                    >
+                                      <span class="icon-svg" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24">
+                                          <path
+                                            d="M3 17.25V21h3.75l11.06-11.06-3.75-3.75L3 17.25Zm2.92 1.83H5v-.92l8.06-8.06.92.92-8.06 8.06ZM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.48 1.48 3.75 3.75 1.48-1.48Z"
+                                          />
+                                        </svg>
+                                      </span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      class="table-icon-button table-icon-button--danger"
+                                      [attr.aria-label]="'Delete page ' + pageItem.name"
+                                      (click)="deletePage(pageItem.id, pageItem.name, $event)"
+                                    >
+                                      <span class="icon-svg" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24">
+                                          <path d="M9 3h6l1 1h4v2H4V4h4l1-1Zm1 6h2v8h-2V9Zm4 0h2v8h-2V9ZM7 9h2v8H7V9Zm-1 12a2 2 0 0 1-2-2V7h16v12a2 2 0 0 1-2 2H6Z" />
+                                        </svg>
+                                      </span>
+                                    </button>
+                                  </div>
+                                </article>
+                              }
+                            </div>
+                          } @else {
+                            <div class="mapping-entity-list__empty">No pages created for this module yet.</div>
+                          }
+                        </div>
+                      }
+
+                      <div class="mapping-editor-grid mapping-editor-grid--three">
+                        <mat-form-field appearance="outline" floatLabel="always">
+                          <mat-label>Client</mat-label>
+                          <mat-select
+                            [formControl]="pageForm.controls.projectId"
+                            [disabled]="isScopedClientEdit()"
+                            (selectionChange)="onMappingPageProjectChange($event.value)"
+                          >
+                            @for (project of projectOptions(); track project.id) {
+                              <mat-option [value]="project.id">{{ project.name }}</mat-option>
+                            }
+                          </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" floatLabel="always">
+                          <mat-label>Module</mat-label>
+                          <mat-select
+                            [formControl]="pageForm.controls.moduleId"
+                            (selectionChange)="onMappingPageModuleChange($event.value)"
+                          >
+                            @for (moduleItem of pageModuleOptions(); track moduleItem.id) {
+                              <mat-option [value]="moduleItem.id">{{ moduleItem.name }}</mat-option>
+                            }
+                          </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" floatLabel="always">
+                          <mat-label>Page name</mat-label>
+                          <input matInput [formControl]="pageForm.controls.name" />
+                        </mat-form-field>
+                      </div>
+
+                      <div class="mapping-step__actions">
+                        <button mat-flat-button color="primary" type="button" (click)="savePageSection()" [disabled]="savingModule()">
+                          {{ savingModule() ? 'Saving page...' : 'Save page' }}
+                        </button>
+                      </div>
+                    </section>
+
+                    <section class="mapping-step">
+                      <div class="mapping-step__header">
+                        <span class="mapping-step__badge">4</span>
+                        <h3>Feature</h3>
+                        <div class="mapping-step__spacer"></div>
+                        @if (featureForm.controls.pageId.value || editingPageId()) {
+                          <button
+                            type="button"
+                            class="mapping-step__ghost-action"
+                            (click)="prepareNewFeature($event)"
+                          >
+                            New feature
+                          </button>
+                        }
+                        @if (editingFeatureId()) {
+                          <button
+                            type="button"
+                            class="table-icon-button table-icon-button--danger"
+                            aria-label="Delete feature"
+                            (click)="deleteEditingFeature()"
+                          >
+                            <span class="icon-svg" aria-hidden="true">
+                              <svg viewBox="0 0 24 24">
+                                <path d="M9 3h6l1 1h4v2H4V4h4l1-1Zm1 6h2v8h-2V9Zm4 0h2v8h-2V9ZM7 9h2v8H7V9Zm-1 12a2 2 0 0 1-2-2V7h16v12a2 2 0 0 1-2 2H6Z" />
+                              </svg>
+                            </span>
+                          </button>
+                        }
+                      </div>
+
+                      @if (featureForm.controls.pageId.value || mappingFeatureOptions().length || editingFeatureId()) {
+                        <div class="mapping-entity-list">
+                          <div class="mapping-entity-list__label">
+                            Existing features
+                            @if (selectedFeaturePageName()) {
+                              <span class="mapping-entity-list__context">
+                                for {{ selectedFeaturePageName() }}
+                              </span>
+                            }
+                          </div>
+                          @if (mappingFeatureOptions().length) {
+                            <div class="mapping-entity-list__items">
+                              @for (featureItem of mappingFeatureOptions(); track featureItem.id) {
+                                <article
+                                  class="mapping-entity-row"
+                                  [class.is-active]="isMappingFeatureSelected(featureItem.id)"
+                                >
+                                  <button
+                                    type="button"
+                                    class="mapping-entity-row__select"
+                                    (click)="selectMappingFeature(featureItem.id, $event)"
+                                  >
+                                    <span class="mapping-entity-row__title">{{ featureItem.name }}</span>
+                                  </button>
+                                  <div class="mapping-entity-row__actions">
+                                    <button
+                                      type="button"
+                                      class="table-icon-button table-icon-button--edit"
+                                      [attr.aria-label]="'Edit feature ' + featureItem.name"
+                                      (click)="selectMappingFeature(featureItem.id, $event)"
+                                    >
+                                      <span class="icon-svg" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24">
+                                          <path
+                                            d="M3 17.25V21h3.75l11.06-11.06-3.75-3.75L3 17.25Zm2.92 1.83H5v-.92l8.06-8.06.92.92-8.06 8.06ZM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.48 1.48 3.75 3.75 1.48-1.48Z"
+                                          />
+                                        </svg>
+                                      </span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      class="table-icon-button table-icon-button--danger"
+                                      [attr.aria-label]="'Delete feature ' + featureItem.name"
+                                      (click)="deleteFeature(featureItem.id, featureItem.name, $event)"
+                                    >
+                                      <span class="icon-svg" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24">
+                                          <path d="M9 3h6l1 1h4v2H4V4h4l1-1Zm1 6h2v8h-2V9Zm4 0h2v8h-2V9ZM7 9h2v8H7V9Zm-1 12a2 2 0 0 1-2-2V7h16v12a2 2 0 0 1-2 2H6Z" />
+                                        </svg>
+                                      </span>
+                                    </button>
+                                  </div>
+                                </article>
+                              }
+                            </div>
+                          } @else {
+                            <div class="mapping-entity-list__empty">No features created for this page yet.</div>
+                          }
+                        </div>
+                      }
+
+                      <div class="mapping-editor-grid mapping-editor-grid--four">
+                        <mat-form-field appearance="outline" floatLabel="always">
+                          <mat-label>Client</mat-label>
+                          <mat-select
+                            [formControl]="featureForm.controls.projectId"
+                            [disabled]="isScopedClientEdit()"
+                            (selectionChange)="onMappingFeatureProjectChange($event.value)"
+                          >
+                            @for (project of projectOptions(); track project.id) {
+                              <mat-option [value]="project.id">{{ project.name }}</mat-option>
+                            }
+                          </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" floatLabel="always">
+                          <mat-label>Module</mat-label>
+                          <mat-select
+                            [formControl]="featureForm.controls.moduleId"
+                            (selectionChange)="onMappingFeatureModuleChange($event.value)"
+                          >
+                            @for (moduleItem of featureModuleOptions(); track moduleItem.id) {
+                              <mat-option [value]="moduleItem.id">{{ moduleItem.name }}</mat-option>
+                            }
+                          </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" floatLabel="always">
+                          <mat-label>Page</mat-label>
+                          <mat-select
+                            [formControl]="featureForm.controls.pageId"
+                            (selectionChange)="onMappingFeaturePageChange($event.value)"
+                          >
+                            @for (pageItem of featurePageOptions(); track pageItem.id) {
+                              <mat-option [value]="pageItem.id">{{ pageItem.name }}</mat-option>
+                            }
+                          </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" floatLabel="always">
+                          <mat-label>Feature name</mat-label>
+                          <input matInput [formControl]="featureForm.controls.name" />
+                        </mat-form-field>
+                      </div>
+
+                      <div class="mapping-step__actions">
+                        <button mat-flat-button color="primary" type="button" (click)="saveFeatureSection()" [disabled]="savingFeature()">
+                          {{ savingFeature() ? 'Saving feature...' : 'Save feature' }}
+                        </button>
+                      </div>
+                    </section>
+                  </form>
+                </mat-card>
+              </div>
+            }
+          </mat-card>
+      </section>
+    }
+  }
+</section>

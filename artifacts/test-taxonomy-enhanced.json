@@ -1,0 +1,272 @@
+[
+  {
+    "name": "Smoke",
+    "description": "Fast, high-confidence checks that confirm critical user journeys, core integrations, and baseline system availability are working after a change or deployment.",
+    "whenApplicable": [
+      "release candidate validation",
+      "post-deployment verification",
+      "critical-path user journeys",
+      "high-risk production fixes",
+      "environment sanity checks"
+    ],
+    "whenNotApplicable": [
+      "deep exploratory investigation",
+      "long-tail edge-case-only analysis",
+      "broad non-critical variation coverage",
+      "changes that require only lower-level technical verification"
+    ],
+    "defaultPriority": "P0",
+    "tags": [
+      "smoke",
+      "critical-path",
+      "deployment-confidence",
+      "baseline"
+    ]
+  },
+  {
+    "name": "Functional",
+    "description": "Checks that business behavior, workflow rules, and user-visible feature outcomes work as intended.",
+    "whenApplicable": [
+      "feature behavior changes",
+      "form logic",
+      "UI interactions"
+    ],
+    "whenNotApplicable": [
+      "pure non-functional benchmarking"
+    ],
+    "defaultPriority": "P1",
+    "tags": [
+      "behavior",
+      "business-logic"
+    ]
+  },
+  {
+    "name": "Integration",
+    "description": "Checks interactions between UI, services, APIs, and supporting dependencies.",
+    "whenApplicable": [
+      "external API usage",
+      "data synchronization",
+      "multi-service workflows"
+    ],
+    "whenNotApplicable": [
+      "fully isolated local-only behavior"
+    ],
+    "defaultPriority": "P1",
+    "tags": [
+      "integration",
+      "dependency"
+    ]
+  },
+  {
+    "name": "API",
+    "description": "Focused validation of request contracts, response structures, and error handling.",
+    "whenApplicable": [
+      "API-backed screens",
+      "contract-sensitive changes",
+      "payload transformations"
+    ],
+    "whenNotApplicable": [
+      "pure presentation changes with no network impact"
+    ],
+    "defaultPriority": "P1",
+    "tags": [
+      "api",
+      "contract"
+    ]
+  },
+  {
+    "name": "Regression",
+    "description": "Checks that previously working behavior remains intact after change.",
+    "whenApplicable": [
+      "shared component changes",
+      "risk of side effects",
+      "bug fix verification"
+    ],
+    "whenNotApplicable": [
+      "disconnected one-off prototypes"
+    ],
+    "defaultPriority": "P1",
+    "tags": [
+      "stability",
+      "coverage"
+    ]
+  },
+  {
+    "name": "E2E",
+    "description": "Checks full user journeys through multiple layers of the application stack.",
+    "whenApplicable": [
+      "critical workflows",
+      "journey validation across pages",
+      "release readiness"
+    ],
+    "whenNotApplicable": [
+      "tiny isolated unit behaviors"
+    ],
+    "defaultPriority": "P1",
+    "tags": [
+      "journey",
+      "workflow"
+    ]
+  },
+  {
+    "name": "Performance",
+    "description": "Checks responsiveness, rendering speed, and throughput under expected load.",
+    "whenApplicable": [
+      "large datasets",
+      "dashboard screens",
+      "upload-heavy features"
+    ],
+    "whenNotApplicable": [
+      "small static copy changes"
+    ],
+    "defaultPriority": "P2",
+    "tags": [
+      "non-functional",
+      "latency"
+    ]
+  },
+  {
+    "name": "Security",
+    "description": "Checks confidentiality, integrity, authorization, and safe failure behavior.",
+    "whenApplicable": [
+      "authentication",
+      "uploads",
+      "sensitive data",
+      "permissioned actions"
+    ],
+    "whenNotApplicable": [
+      "public non-sensitive static content"
+    ],
+    "defaultPriority": "P0",
+    "tags": [
+      "security",
+      "risk"
+    ]
+  },
+  {
+    "name": "Accessibility",
+    "description": "Checks keyboard support, semantics, contrast, and assistive-technology usability.",
+    "whenApplicable": [
+      "interactive UI components",
+      "forms",
+      "navigation",
+      "modals"
+    ],
+    "whenNotApplicable": [
+      "non-interactive backend-only changes"
+    ],
+    "defaultPriority": "P1",
+    "tags": [
+      "a11y",
+      "inclusive"
+    ]
+  },
+  {
+    "name": "Usability",
+    "description": "Checks whether the product is clear, efficient, discoverable, and forgiving for intended users, including feedback quality and error recovery.",
+    "whenApplicable": [
+      "new or reworked user journeys",
+      "dashboard redesigns",
+      "dense admin workflows",
+      "high-touch forms and filters",
+      "multi-step tasks where guidance and feedback matter"
+    ],
+    "whenNotApplicable": [
+      "pure backend-only changes",
+      "technical refactors with no user-facing impact",
+      "changes limited to invisible infrastructure behavior"
+    ],
+    "defaultPriority": "P2",
+    "tags": [
+      "usability",
+      "ux",
+      "feedback",
+      "discoverability"
+    ]
+  },
+  {
+    "name": "Responsiveness",
+    "description": "Checks that layouts, navigation, readability, and interactions remain usable and visually stable across mobile, tablet, laptop, and desktop screen sizes.",
+    "whenApplicable": [
+      "responsive web interfaces",
+      "screen-size-specific layouts",
+      "dashboards, tables, and forms with dense content",
+      "navigation patterns that change across breakpoints",
+      "orientation changes or browser window resizing",
+      "components vulnerable to overflow, clipping, or reflow issues"
+    ],
+    "whenNotApplicable": [
+      "backend-only changes",
+      "services with no browser-rendered UI",
+      "changes proven to affect only server-side processing with no viewport impact"
+    ],
+    "defaultPriority": "P1",
+    "tags": [
+      "responsiveness",
+      "responsive",
+      "viewport",
+      "mobile",
+      "tablet",
+      "desktop"
+    ]
+  },
+  {
+    "name": "Compatibility",
+    "description": "Checks that behavior remains correct and consistent across supported browsers and client environments, especially Chrome, Firefox, Microsoft Edge, and Safari.",
+    "whenApplicable": [
+      "browser-rendered web applications",
+      "cross-browser support commitments",
+      "browser-sensitive controls such as date pickers, uploads, tables, modals, and navigation",
+      "features that depend on layout, rendering, focus handling, downloads, or clipboard behavior",
+      "changes that may behave differently in Chrome, Firefox, Microsoft Edge, or Safari"
+    ],
+    "whenNotApplicable": [
+      "server-only jobs",
+      "headless background processing with no browser-facing surface",
+      "changes proven independent of browser rendering and client APIs"
+    ],
+    "defaultPriority": "P2",
+    "tags": [
+      "compatibility",
+      "cross-browser",
+      "chrome",
+      "firefox",
+      "edge",
+      "safari"
+    ]
+  },
+  {
+    "name": "Data Integrity",
+    "description": "Checks that saved, transformed, and displayed data remains correct and consistent.",
+    "whenApplicable": [
+      "editing workflows",
+      "imports",
+      "API mapping"
+    ],
+    "whenNotApplicable": [
+      "static-only presentational changes"
+    ],
+    "defaultPriority": "P1",
+    "tags": [
+      "data",
+      "consistency"
+    ]
+  },
+  {
+    "name": "Recovery",
+    "description": "Checks graceful behavior after transient failures, retries, or interrupted actions.",
+    "whenApplicable": [
+      "uploads",
+      "network-dependent flows",
+      "autosave or long-running actions"
+    ],
+    "whenNotApplicable": [
+      "read-only static paths"
+    ],
+    "defaultPriority": "P2",
+    "tags": [
+      "resilience",
+      "failure-handling"
+    ]
+  }
+]

@@ -1,0 +1,27 @@
+<section class="manual-execution-workspace">
+  <nav class="manual-tabs" aria-label="Manual execution workspace">
+    <a
+      class="manual-tab"
+      routerLink="dashboard"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+    >
+      <span class="manual-tab__label">Execution Dashboard</span>
+      <span class="manual-tab__hint">Metrics, charts, and report access</span>
+    </a>
+
+    <a class="manual-tab" routerLink="test-run" routerLinkActive="active">
+      <span class="manual-tab__label">Test Run</span>
+      <span class="manual-tab__hint">Build the next manual execution run</span>
+    </a>
+
+    <a class="manual-tab" routerLink="test-execution" routerLinkActive="active">
+      <span class="manual-tab__label">Test Execution</span>
+      <span class="manual-tab__hint">Track active and completed runs</span>
+    </a>
+  </nav>
+
+  <div class="manual-execution-workspace__content">
+    <router-outlet />
+  </div>
+</section>

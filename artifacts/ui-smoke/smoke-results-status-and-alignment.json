@@ -1,0 +1,77 @@
+{
+  "testRunFields": {
+    ".filter-strip .search-field": {
+      "label": "Search approved suites",
+      "labelTopOffset": 15,
+      "inputTopOffset": 9,
+      "triggerTopOffset": null,
+      "transform": "matrix(1, 0, 0, 1, 0, -14)"
+    },
+    ".planner-form__grid mat-form-field:nth-child(2)": {
+      "label": "Environment",
+      "labelTopOffset": 15,
+      "inputTopOffset": 9,
+      "triggerTopOffset": null,
+      "transform": "matrix(1, 0, 0, 1, 0, -14)"
+    },
+    ".planner-form__grid mat-form-field:nth-child(3)": {
+      "label": "Build Version",
+      "labelTopOffset": 15,
+      "inputTopOffset": 9,
+      "triggerTopOffset": null,
+      "transform": "matrix(1, 0, 0, 1, 0, -14)"
+    }
+  },
+  "testExecutionFields": {
+    ".filter-strip .search-field": {
+      "label": "Search runs",
+      "labelTopOffset": 15,
+      "inputTopOffset": 9,
+      "triggerTopOffset": null,
+      "transform": "matrix(1, 0, 0, 1, 0, -14)"
+    }
+  },
+  "generatorFields": {
+    ".kb-card .kb-selection-block:nth-child(1) mat-form-field": {
+      "label": "Components",
+      "labelTopOffset": 15,
+      "inputTopOffset": null,
+      "triggerTopOffset": 9,
+      "transform": "matrix(1, 0, 0, 1, 0, -14)"
+    },
+    ".kb-card .kb-selection-block:nth-child(2) mat-form-field": {
+      "label": "Feature Types",
+      "labelTopOffset": 15,
+      "inputTopOffset": null,
+      "triggerTopOffset": 9,
+      "transform": "matrix(1, 0, 0, 1, 0, -14)"
+    },
+    ".kb-card .kb-selection-block:nth-child(3) mat-form-field": {
+      "label": "Rule Packs",
+      "labelTopOffset": 15,
+      "inputTopOffset": null,
+      "triggerTopOffset": 9,
+      "transform": "matrix(1, 0, 0, 1, 0, -14)"
+    }
+  },
+  "runButtons": {
+    "initial": {
+      "selected": true,
+      "background": "linear-gradient(rgba(15, 154, 96, 0.96), rgba(11, 122, 78, 0.96))",
+      "color": "rgb(248, 252, 255)",
+      "boxShadow": "rgba(11, 122, 78, 0.22) 0px 16px 26px 0px, rgba(15, 154, 96, 0.16) 0px 0px 0px 3px"
+    },
+    "afterPass": {
+      "selected": true,
+      "background": "linear-gradient(rgba(15, 154, 96, 0.96), rgba(11, 122, 78, 0.96))",
+      "color": "rgb(248, 252, 255)",
+      "boxShadow": "rgba(11, 122, 78, 0.22) 0px 16px 26px 0px, rgba(15, 154, 96, 0.16) 0px 0px 0px 3px"
+    },
+    "afterFail": {
+      "selected": false,
+      "background": "none",
+      "color": "rgb(181, 52, 76)",
+      "boxShadow": "none"
+    }
+  }
+}

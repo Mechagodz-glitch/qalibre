@@ -1,0 +1,380 @@
+<section class="dashboard-page">
+  @if (loading()) {
+    <section class="centered-state">
+      <mat-spinner diameter="42"></mat-spinner>
+    </section>
+  } @else {
+    <header class="dashboard-header">
+      <div class="dashboard-header__copy">
+        <p class="page-eyebrow">Systems overview</p>
+        <h1>Analytics Dashboard</h1>
+
+        <div class="dashboard-header__chips">
+          @for (chip of heroChips(); track chip.label) {
+            <article class="context-chip">
+              <span>{{ chip.label }}</span>
+              <strong>{{ chip.value | number }}</strong>
+            </article>
+          }
+        </div>
+      </div>
+
+      <div class="dashboard-header__toolbar">
+        <mat-form-field appearance="outline" class="toolbar-select-field">
+          <mat-select
+            panelClass="dashboard-date-select-panel"
+            [value]="dateFilter()"
+            (valueChange)="setDateFilter($event)"
+          >
+            <mat-select-trigger>
+              <span class="toolbar-select-trigger">
+                <span aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path
+                      d="M7 2h2v2h6V2h2v2h3a1 1 0 0 1 1 1v15a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a1 1 0 0 1 1-1h3V2Zm12 8H5v10h14V10Zm-2-4H7v2h10V6Z"
+                    ></path>
+                  </svg>
+                </span>
+                {{ dateFilterLabel() }}
+              </span>
+            </mat-select-trigger>
+
+            @for (option of dateFilterOptions; track option.value) {
+              <mat-option [value]="option.value">{{ option.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </header>
+
+    <section class="metric-grid">
+      @for (card of metricCards(); track card.label) {
+        <mat-card
+          class="metric-card"
+          [class]="'metric-card metric-card--' + card.tone"
+          [class.metric-card--interactive]="card.route"
+        >
+          <mat-card-content>
+            @if (card.route) {
+              <a class="metric-card__inner metric-card__inner--link" [routerLink]="card.route">
+                <div class="metric-card__topline">
+                  <span class="metric-card__icon" [class]="'metric-card__icon--' + card.tone">
+                    @switch (card.icon) {
+                      @case ('suite') {
+                        <svg viewBox="0 0 24 24">
+                          <path d="M4 5h7v6H4zM13 5h7v10h-7zM4 13h7v6H4zM13 17h7v2h-7z"></path>
+                        </svg>
+                      }
+                      @case ('review') {
+                        <svg viewBox="0 0 24 24">
+                          <path d="M12 2 4 5v6c0 5.6 3.8 10.8 8 12 4.2-1.2 8-6.4 8-12V5l-8-3Zm3.6 7.2-4.1 4.8-3.1-2.9 1.4-1.4 1.6 1.5 2.7-3.2 1.5 1.2Z"></path>
+                        </svg>
+                      }
+                      @case ('run') {
+                        <svg viewBox="0 0 24 24">
+                          <path d="m8 5 11 7-11 7V5ZM4 5h2v14H4V5Z"></path>
+                        </svg>
+                      }
+                      @default {
+                        <svg viewBox="0 0 24 24">
+                          <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"></path>
+                        </svg>
+                      }
+                    }
+                  </span>
+
+                  <span class="metric-card__badge" [class]="'metric-card__badge--' + card.badgeTone">
+                    {{ card.badge }}
+                  </span>
+                </div>
+
+                <span>{{ card.label }}</span>
+                <strong>{{ card.value }}</strong>
+                <p>{{ card.description }}</p>
+              </a>
+            } @else {
+              <div class="metric-card__inner">
+                <div class="metric-card__topline">
+                  <span class="metric-card__icon" [class]="'metric-card__icon--' + card.tone">
+                    @switch (card.icon) {
+                      @case ('suite') {
+                        <svg viewBox="0 0 24 24">
+                          <path d="M4 5h7v6H4zM13 5h7v10h-7zM4 13h7v6H4zM13 17h7v2h-7z"></path>
+                        </svg>
+                      }
+                      @case ('review') {
+                        <svg viewBox="0 0 24 24">
+                          <path d="M12 2 4 5v6c0 5.6 3.8 10.8 8 12 4.2-1.2 8-6.4 8-12V5l-8-3Zm3.6 7.2-4.1 4.8-3.1-2.9 1.4-1.4 1.6 1.5 2.7-3.2 1.5 1.2Z"></path>
+                        </svg>
+                      }
+                      @case ('run') {
+                        <svg viewBox="0 0 24 24">
+                          <path d="m8 5 11 7-11 7V5ZM4 5h2v14H4V5Z"></path>
+                        </svg>
+                      }
+                      @default {
+                        <svg viewBox="0 0 24 24">
+                          <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"></path>
+                        </svg>
+                      }
+                    }
+                  </span>
+
+                  <span class="metric-card__badge" [class]="'metric-card__badge--' + card.badgeTone">
+                    {{ card.badge }}
+                  </span>
+                </div>
+
+                <span>{{ card.label }}</span>
+                <strong>{{ card.value }}</strong>
+                <p>{{ card.description }}</p>
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+      }
+    </section>
+
+    <section class="dashboard-grid dashboard-grid--primary">
+      <mat-card class="surface-card performance-card">
+        <mat-card-content class="surface-card__content">
+          <div class="card-heading card-heading--split">
+            <div>
+              <p class="section-eyebrow">Performance breakdown</p>
+              <h2>Generated, approved, and executed by project</h2>
+            </div>
+
+            <div class="performance-legend" aria-hidden="true">
+              <span class="performance-legend__item performance-legend__item--generated">Generated</span>
+              <span class="performance-legend__item performance-legend__item--approved">Approved</span>
+              <span class="performance-legend__item performance-legend__item--executed">Executed</span>
+            </div>
+          </div>
+
+          @if (!performanceBreakdownRows().length) {
+            <app-empty-state
+              title="No project performance data yet"
+              description="Generated, approved, and executed project metrics will appear here once suites start moving through the workflow."
+            />
+          } @else {
+            <div class="performance-shell">
+              <div
+                class="performance-stage"
+                [class.performance-stage--scrollable]="performanceChartScrollable()"
+              >
+                <div class="performance-axis">
+                  @for (tick of performanceChartTicks(); track tick.value) {
+                    <span [style.bottom.%]="tick.position">{{ tick.label }}</span>
+                  }
+                </div>
+                <div
+                  class="performance-scroll"
+                  [class.performance-scroll--active]="performanceChartScrollable()"
+                >
+                  <div
+                    class="performance-chart"
+                    [style.width.px]="performanceChartContentWidth()"
+                  >
+                    @for (tick of performanceChartTicks(); track tick.value) {
+                      <span class="performance-grid-line" [style.bottom.%]="tick.position"></span>
+                    }
+                    <div
+                      class="performance-groups"
+                      [style.grid-template-columns]="'repeat(' + performanceBreakdownRows().length + ', minmax(8rem, 1fr))'"
+                    >
+                      @for (row of performanceBreakdownRows(); track row.projectName) {
+                        <article class="performance-group">
+                          <div class="performance-group__bars">
+                            <span
+                              class="performance-bar performance-bar--generated"
+                              [style.height.%]="performanceBarHeight(row.generated)"
+                              [matTooltip]="performanceTooltip(row, 'generated')"
+                              matTooltipPosition="above"
+                              tabindex="0"
+                            ></span>
+                            <span
+                              class="performance-bar performance-bar--approved"
+                              [style.height.%]="performanceBarHeight(row.approved)"
+                              [matTooltip]="performanceTooltip(row, 'approved')"
+                              matTooltipPosition="above"
+                              tabindex="0"
+                            ></span>
+                            <span
+                              class="performance-bar performance-bar--executed"
+                              [style.height.%]="performanceBarHeight(row.executed)"
+                              [matTooltip]="performanceTooltip(row, 'executed')"
+                              matTooltipPosition="above"
+                              tabindex="0"
+                            ></span>
+                          </div>
+
+                          <span class="performance-group__label">{{ row.projectName }}</span>
+                        </article>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="surface-card project-sync-card">
+        <mat-card-content class="surface-card__content">
+          <div class="project-sync-card__header">
+            <div class="project-sync-card__title">
+              <p class="section-eyebrow">Recent executions</p>
+              <h2>Execution by project</h2>
+            </div>
+
+            <div class="project-sync-card__legend" aria-hidden="true">
+              <span class="project-sync-card__legend-item project-sync-card__legend-item--passed">Pass</span>
+              <span class="project-sync-card__legend-item project-sync-card__legend-item--failed">Fail</span>
+              <span class="project-sync-card__legend-item project-sync-card__legend-item--skipped">Skip</span>
+            </div>
+          </div>
+
+          @if (!projectSyncRows().length) {
+            <app-empty-state
+              title="No project execution metrics yet"
+              description="Project analytics will appear here after manual runs start recording results."
+            />
+          } @else {
+            <div class="project-sync-list">
+              @for (row of projectSyncRows(); track row.projectId) {
+                <article class="project-sync-row">
+                  <div class="project-sync-row__headline">
+                    <div class="project-sync-row__identity">
+                      <span class="project-sync-row__icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                          <path d="M7.5 5A2.5 2.5 0 1 1 7.5 10a2.5 2.5 0 0 1 0-5Zm9 0A2.5 2.5 0 1 1 16.5 10a2.5 2.5 0 0 1 0-5ZM6 12.5c2.21 0 4 1.79 4 4V19H2v-2.5c0-2.21 1.79-4 4-4Zm12 0c2.21 0 4 1.79 4 4V19h-8v-2.5c0-2.21 1.79-4 4-4Z"></path>
+                        </svg>
+                      </span>
+                      <strong
+                        [matTooltip]="row.qaTooltip"
+                        matTooltipPosition="above"
+                      >
+                        {{ row.projectName }}
+                      </strong>
+                    </div>
+                    <span class="project-sync-row__qa">QA: {{ row.qaLabel }}</span>
+                  </div>
+
+                  <div class="project-sync-row__track">
+                    @if (row.passed) {
+                      <span
+                        class="project-sync-row__segment project-sync-row__segment--passed"
+                        [style.width.%]="projectSyncSegmentWidth(row.passed, row)"
+                        [matTooltip]="projectSyncTooltip(row, 'passed')"
+                        matTooltipPosition="above"
+                      ></span>
+                    }
+                    @if (row.failed) {
+                      <span
+                        class="project-sync-row__segment project-sync-row__segment--failed"
+                        [style.width.%]="projectSyncSegmentWidth(row.failed, row)"
+                        [matTooltip]="projectSyncTooltip(row, 'failed')"
+                        matTooltipPosition="above"
+                      ></span>
+                    }
+                    @if (row.skipped) {
+                      <span
+                        class="project-sync-row__segment project-sync-row__segment--skipped"
+                        [style.width.%]="projectSyncSegmentWidth(row.skipped, row)"
+                        [matTooltip]="projectSyncTooltip(row, 'skipped')"
+                        matTooltipPosition="above"
+                      ></span>
+                    }
+                  </div>
+
+                  <div class="project-sync-row__metrics">
+                    <span><em>Total</em> {{ row.total | number }}</span>
+                    <span class="project-sync-row__metric project-sync-row__metric--passed">
+                      <em>Passed</em> {{ row.passed | number }}
+                    </span>
+                    <span class="project-sync-row__metric project-sync-row__metric--failed">
+                      <em>Failed</em> {{ row.failed | number }}
+                    </span>
+                    <span class="project-sync-row__metric project-sync-row__metric--skipped">
+                      <em>Skipped</em> {{ row.skipped | number }}
+                    </span>
+                  </div>
+                </article>
+              }
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+    </section>
+
+    <section class="dashboard-grid dashboard-grid--secondary">
+      <mat-card class="surface-card qa-metrics-card">
+        <mat-card-content class="surface-card__content qa-metrics-card__content">
+          <div class="qa-metrics-card__header">
+            <div>
+              <h2>QA Metrics</h2>
+            </div>
+
+            <span class="qa-metrics-card__badge">Live Metrics</span>
+          </div>
+
+          @if (!qaMetricsRows().length) {
+            <app-empty-state
+              title="No QA roster available"
+              description="QA metrics will appear here once tester options or execution ownership is available."
+            />
+          } @else {
+            <div class="qa-metrics-table">
+              <div class="qa-metrics-table__head">
+                <span>QA Member</span>
+                <span>Total Projects</span>
+                <span>Total Generations</span>
+                <span>QA Cycles</span>
+              </div>
+
+              <div class="qa-metrics-table__body">
+                @for (row of qaMetricsRows(); track row.name) {
+                  <article class="qa-metrics-row">
+                    <div class="qa-metrics-row__member">
+                      <div class="qa-metrics-row__avatar-shell">
+                        <span class="qa-avatar">{{ qaInitials(row.name) }}</span>
+                        <span
+                          class="qa-metrics-row__status"
+                          [class.qa-metrics-row__status--idle]="!row.isActive"
+                        ></span>
+                      </div>
+
+                      <div>
+                        <strong>{{ row.name }}</strong>
+                        <span>{{ row.roleTitle || 'QA Engineer' }}</span>
+                      </div>
+                    </div>
+
+                    <div class="qa-metrics-row__projects">
+                      {{ row.totalProjects | number }}
+                    </div>
+
+                    <div class="qa-metrics-row__generations">
+                      <strong>{{ row.totalGenerations | number }}</strong>
+                      <span class="qa-metrics-row__mini-track">
+                        <span
+                          class="qa-metrics-row__mini-fill"
+                          [style.width.%]="qaMetricsGenerationWidth(row.totalGenerations)"
+                        ></span>
+                      </span>
+                    </div>
+
+                    <div class="qa-metrics-row__executions">
+                      <strong>{{ row.totalExecutions | number }}</strong>
+                    </div>
+                  </article>
+                }
+              </div>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+    </section>
+  }
+</section>

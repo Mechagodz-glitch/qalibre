@@ -1,0 +1,52 @@
+{
+  "title": "Detect Technologies - Industrial Dashboard QA Context",
+  "summary": "Company and product context for Detect Technologies and T-Pulse, focused on industrial safety, operations, inspections, and security dashboards to improve functional dashboard test case curation.",
+  "kind": "manualInput",
+  "sourceFormat": "json",
+  "mimeType": "application/json",
+  "contentText": "{\n  \"recordType\": \"companyDashboardQaContext\",\n  \"company\": {\n    \"name\": \"Detect Technologies\",\n    \"website\": \"https://detecttechnologies.com/\",\n    \"primaryPlatform\": \"T-Pulse\",\n    \"industryFocus\": [\n      \"industrial safety automation\",\n      \"industrial operations monitoring\",\n      \"industrial inspections\",\n      \"industrial security and surveillance\"\n    ],\n    \"qaRelevance\": \"The QA team primarily validates the functional behavior of industrial dashboards that aggregate AI detections, operational metrics, compliance signals, and zone-based drilldowns.\"\n  },\n  \"productContext\": {\n    \"overview\": \"Detect Technologies positions T-Pulse as a unified industrial AI platform that brings multiple industrial functions onto a single operational dashboard surface. The platform emphasizes real-time monitoring, risk reduction, compliance visibility, and decision support across safety, operations, inspections, and security.\",\n    \"dashboardFamilies\": [\n      {\n        \"name\": \"Workplace Safety Dashboards\",\n        \"focusAreas\": [\n          \"unsafe acts and unsafe conditions\",\n          \"red-zone monitoring\",\n          \"worker health and environment risk visibility\",\n          \"incident and violation tracking\",\n          \"corrective action visibility\"\n        ],\n        \"commonWidgets\": [\n          \"KPI summary cards\",\n          \"zone-wise risk splits\",\n          \"alert and violation lists\",\n          \"trend charts\",\n          \"evidence-linked detail views\"\n        ]\n      },\n      {\n        \"name\": \"Workplace Operations Dashboards\",\n        \"focusAreas\": [\n          \"progress and schedule tracking\",\n          \"occupancy and manpower visibility\",\n          \"inventory and resource tracking\",\n          \"equipment and workforce productivity\"\n        ],\n        \"commonWidgets\": [\n          \"planned vs actual metrics\",\n          \"trend charts\",\n          \"zone comparisons\",\n          \"filters by site, zone, and date\"\n        ]\n      },\n      {\n        \"name\": \"Workplace Inspections Dashboards\",\n        \"focusAreas\": [\n          \"asset condition\",\n          \"predictive maintenance\",\n          \"remote inspection insights\",\n          \"equipment and infrastructure anomaly visibility\"\n        ],\n        \"commonWidgets\": [\n          \"inspection status tiles\",\n          \"maintenance indicators\",\n          \"fault or anomaly lists\",\n          \"history and recommendation views\"\n        ]\n      },\n      {\n        \"name\": \"Workplace Security Dashboards\",\n        \"focusAreas\": [\n          \"intrusion detection\",\n          \"perimeter monitoring\",\n          \"patrolling visibility\",\n          \"unauthorized access alerts\"\n        ],\n        \"commonWidgets\": [\n          \"live alert summaries\",\n          \"event timelines\",\n          \"evidence previews\",\n          \"severity-driven triage panels\"\n        ]\n      }\n    ]\n  },\n  \"functionalQaGuidance\": {\n    \"highValueFunctionalThemes\": [\n      \"shared filter propagation across all widgets\",\n      \"date and date-range refresh correctness\",\n      \"zone-based scope retention and drilldown carryover\",\n      \"KPI, chart, and detail-list numerical consistency\",\n      \"alert creation, acknowledgement, escalation, and closure behavior\",\n      \"evidence traceability from summary cards to images, snapshots, or media records\",\n      \"permit or compliance workflow state consistency where applicable\",\n      \"planned vs actual operational metric integrity\",\n      \"empty-state and partial-data handling\",\n      \"performance and stability for multi-widget dashboard refreshes\"\n    ],\n    \"dashboardInteractionPatternsToTest\": [\n      \"clicking chart segments opens the correct scoped detail view\",\n      \"zone color mapping remains consistent across cards and charts\",\n      \"hover states and tooltips expose accurate date/category/value context\",\n      \"shared filters update both top-level KPIs and deeper charts without stale data\",\n      \"drilldowns preserve selected site, zone, and date context\",\n      \"summary indicators match the underlying detailed records\"\n    ],\n    \"industrialEdgeCases\": [\n      \"camera or sensor offline states\",\n      \"delayed ingestion for the latest date\",\n      \"duplicate or repeated alerts\",\n      \"zones with no data\",\n      \"partially processed cumulative date ranges\",\n      \"evidence available for some records but not others\"\n    ]\n  },\n  \"curationGuidance\": {\n    \"suggestedTags\": [\n      \"detect-technologies\",\n      \"t-pulse\",\n      \"industrial-ai\",\n      \"industrial-safety\",\n      \"industrial-operations\",\n      \"inspection-dashboard\",\n      \"security-dashboard\",\n      \"dashboard-qa\",\n      \"functional-testing\",\n      \"zone-monitoring\"\n    ],\n    \"recommendedFeatureTypes\": [\n      \"Safety Portal Dashboard KPI Monitoring\",\n      \"Safety Portal Dashboard Trend Analysis\",\n      \"Safety Portal Shared Filtering\",\n      \"Dashboard Analytics\"\n    ],\n    \"recommendedRulePacks\": [\n      \"Shared Filtering And Scope Control\",\n      \"Dashboard KPI Cards And Segregation Drilldowns\",\n      \"Dashboard Trend Visualization Tabs\",\n      \"Analytics Visualization And Hierarchical Data\"\n    ]\n  },\n  \"sources\": [\n    {\n      \"url\": \"https://detecttechnologies.com/\",\n      \"relevance\": \"Company website and high-level product positioning.\"\n    },\n    {\n      \"url\": \"https://detecttechnologies.com/wp-content/uploads/2021/08/Brochure-test.pdf\",\n      \"relevance\": \"Official T-Pulse brochure describing modules, capabilities, and industrial dashboard use cases.\"\n    },\n    {\n      \"url\": \"https://detecttechnologies.com/workplace-safety/\",\n      \"relevance\": \"Official workplace safety solution page.\"\n    },\n    {\n      \"url\": \"https://detecttechnologies.com/workplace-operations/\",\n      \"relevance\": \"Official workplace operations solution page.\"\n    },\n    {\n      \"url\": \"https://detecttechnologies.com/workplace-inspections/\",\n      \"relevance\": \"Official workplace inspections solution page.\"\n    },\n    {\n      \"url\": \"https://detecttechnologies.com/workplace-security/\",\n      \"relevance\": \"Official workplace security solution page.\"\n    }\n  ],\n  \"notes\": [\n    \"This record is intended to improve test case curation for dashboard-heavy industrial products rather than to define strict product requirements.\",\n    \"Some dashboard characteristics are inferred from official solution positioning and T-Pulse brochure content, then translated into QA-oriented functional guidance.\"\n  ],\n  \"createdAt\": \"2026-03-28\",\n  \"createdBy\": \"Codex\"\n}\n",
+  "extractedMetadata": {
+    "recordType": "companyDashboardQaContext",
+    "companyName": "Detect Technologies",
+    "website": "https://detecttechnologies.com/",
+    "primaryPlatform": "T-Pulse",
+    "intendedUse": "dashboard-functional-testcase-curation",
+    "ingestionMethod": "manual-web-research",
+    "sourceUrls": [
+      "https://detecttechnologies.com/",
+      "https://detecttechnologies.com/wp-content/uploads/2021/08/Brochure-test.pdf",
+      "https://detecttechnologies.com/workplace-safety/",
+      "https://detecttechnologies.com/workplace-operations/",
+      "https://detecttechnologies.com/workplace-inspections/",
+      "https://detecttechnologies.com/workplace-security/"
+    ],
+    "recommendedFeatureTypes": [
+      "Safety Portal Dashboard KPI Monitoring",
+      "Safety Portal Dashboard Trend Analysis",
+      "Safety Portal Shared Filtering",
+      "Dashboard Analytics"
+    ],
+    "recommendedRulePacks": [
+      "Shared Filtering And Scope Control",
+      "Dashboard KPI Cards And Segregation Drilldowns",
+      "Dashboard Trend Visualization Tabs",
+      "Analytics Visualization And Hierarchical Data"
+    ]
+  },
+  "tags": [
+    "detect-technologies",
+    "t-pulse",
+    "industrial-ai",
+    "industrial-safety",
+    "industrial-operations",
+    "inspection-dashboard",
+    "security-dashboard",
+    "dashboard-qa",
+    "functional-testing",
+    "zone-monitoring"
+  ],
+  "reviewStatus": "reviewed",
+  "projectId": "cmn9bb3mc0000pf5kbweby28a",
+  "moduleId": "cmn9bb3n20002pf5kiupsto7o",
+  "pageId": "cmn9bb3nn0004pf5koacg0zkl"
+}

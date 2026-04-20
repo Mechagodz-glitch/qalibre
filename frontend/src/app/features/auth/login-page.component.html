@@ -1,0 +1,43 @@
+<section class="login-shell">
+  <div class="shell-blur"></div>
+  <!-- <header class="login-topbar" aria-label="QAlibre header">
+    <p class="brand-mark">QAlibre</p>
+  </header> -->
+
+  <main class="login-stage">
+    <article class="login-card">
+      <div class="brand-tile" aria-hidden="true">
+        <span>QA</span>
+      </div>
+
+      <h1>Welcome to QAlibre</h1>
+
+      @if (errorMessage()) {
+        <div class="error-banner" role="alert">
+          {{ errorMessage() }}
+        </div>
+      }
+
+      <button mat-flat-button color="primary" class="sign-in-button" (click)="signIn()">
+        <span class="button-content">
+          <span class="ms-icon" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+          </span>
+          <span>Sign in with Microsoft</span>
+        </span>
+      </button>
+
+      <p class="subline">Authenticate with your company account</p>
+
+      <div class="divider"></div>
+
+      <p class="support-copy">
+        Single Sign-On is required for all accounts. Contact your System Administrator for access credentials.
+      </p>
+    </article>
+  </main>
+
+</section>

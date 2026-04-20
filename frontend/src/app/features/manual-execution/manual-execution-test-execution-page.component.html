@@ -1,0 +1,196 @@
+<section class="manual-test-execution-page">
+  @if (loading()) {
+    <section class="centered-state">
+      <mat-spinner diameter="42"></mat-spinner>
+    </section>
+  } @else {
+    <section class="metric-grid">
+      <mat-card class="metric-card metric-card--sky">
+        <mat-card-content>
+          <span>Total Runs</span>
+          <strong>{{ summaryMetrics().totalRuns }}</strong>
+          <p>Visible in the current execution scope</p>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="metric-card metric-card--mint">
+        <mat-card-content>
+          <span>Active Runs</span>
+          <strong>{{ summaryMetrics().activeRuns }}</strong>
+          <p>Pending or in-progress execution work</p>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="metric-card metric-card--slate">
+        <mat-card-content>
+          <span>Completed Runs</span>
+          <strong>{{ summaryMetrics().completedRuns }}</strong>
+          <p>Closed runs with report access</p>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="metric-card metric-card--warm">
+        <mat-card-content>
+          <span>Executed Cases</span>
+          <strong>{{ summaryMetrics().executedCases }}</strong>
+          <p>Passed, failed, or skipped case results</p>
+        </mat-card-content>
+      </mat-card>
+    </section>
+
+    <section class="filter-strip">
+      <mat-form-field appearance="outline">
+        <mat-label>Project</mat-label>
+        <mat-select [value]="projectFilter()" (valueChange)="projectFilter.set($event)">
+          <mat-option value="all">All projects</mat-option>
+          @for (project of projects(); track project.id) {
+            <mat-option [value]="project.id">{{ project.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Status</mat-label>
+        <mat-select [value]="statusFilter()" (valueChange)="statusFilter.set($event)">
+          <mat-option value="all">All statuses</mat-option>
+          <mat-option value="draft">Pending</mat-option>
+          <mat-option value="inProgress">In progress</mat-option>
+          <mat-option value="completed">Completed</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Date</mat-label>
+        <mat-select [value]="dateFilter()" (valueChange)="dateFilter.set($event)">
+          @for (option of dateFilterOptions; track option.value) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <label class="toolbar-search execution-search" aria-label="Search runs">
+        <span class="field-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M10.5 4a6.5 6.5 0 1 0 4.03 11.6l4.43 4.43 1.41-1.41-4.43-4.43A6.5 6.5 0 0 0 10.5 4Zm0 2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Z"
+            />
+          </svg>
+        </span>
+        <input
+          [value]="searchTerm()"
+          (input)="searchTerm.set($any($event.target).value)"
+          placeholder="Search runs"
+          aria-label="Search runs"
+        />
+      </label>
+    </section>
+
+    <mat-card class="tracker-card tracker-card--sky">
+      <mat-card-content class="tracker-card__content">
+        <div class="card-head">
+          <div>
+            <p class="section-eyebrow">Execution queue</p>
+            <h2>Manual test runs</h2>
+            <p>
+              Every card keeps the pass, fail, skip, and completion signals visible
+              before you open the full run detail.
+            </p>
+          </div>
+        </div>
+
+        @if (!filteredRuns().length) {
+          <app-empty-state
+            title="No test runs match these filters"
+            description="Change the project, status, date, or search filters to surface the right run."
+          />
+        } @else {
+          <div class="runs-list">
+            @for (run of filteredRuns(); track run.id) {
+              <article
+                class="run-card"
+                [class.run-card--pending]="run.status === 'draft'"
+                [class.run-card--active]="run.status === 'inProgress'"
+                [class.run-card--completed]="run.status === 'completed'"
+                role="button"
+                tabindex="0"
+                (click)="openRun(run.id)"
+                (keydown)="onRunCardKeydown($event, run.id)"
+              >
+                <div class="run-card__topline">
+                  <div>
+                    <strong>{{ run.name }}</strong>
+                    <span>{{ formatScope(run) || 'Unscoped execution run' }}</span>
+                  </div>
+                  <div class="run-card__top-actions">
+                    <button
+                      mat-stroked-button
+                      class="delete-run-button"
+                      type="button"
+                      [disabled]="deletingRunIds()[run.id]"
+                      (click)="deleteRun(run, $event)"
+                    >
+                      {{ deletingRunIds()[run.id] ? 'Deleting...' : 'Delete Run' }}
+                    </button>
+                    <app-status-badge
+                      [status]="statusTone(run.status)"
+                      [label]="statusLabel(run.status)"
+                    ></app-status-badge>
+                  </div>
+                </div>
+
+                <div class="run-card__meta">
+                  <span>{{ run.suiteCount }} suites</span>
+                  <span>{{ run.totals.total }} cases</span>
+                  <span>{{ run.totals.completionPercent }}% complete</span>
+                  <span>Created {{ formatDate(run.createdAt) }}</span>
+                  @if (run.completedAt) {
+                    <span>Completed {{ formatDate(run.completedAt) }}</span>
+                  }
+                </div>
+
+                <div class="run-progress">
+                  <span [style.width.%]="progressWidth(run)"></span>
+                </div>
+
+                <div class="run-card__totals">
+                  <span class="success">{{ run.totals.passed }} passed</span>
+                  <span class="danger">{{ run.totals.failed }} failed</span>
+                  <span class="warning">{{ run.totals.skipped }} skipped</span>
+                  <span class="muted">{{ run.totals.untested }} Untested</span>
+                </div>
+
+                <div class="run-card__footer">
+                  <div class="run-card__ownership">
+                    <span class="label">QA engineer</span>
+                    <strong>{{ run.assignedTester || run.createdBy }}</strong>
+                  </div>
+
+                  <div class="run-card__actions">
+                    @if (isCompleted(run)) {
+                      <button
+                        mat-stroked-button
+                        type="button"
+                        (click)="openReport(run.id); stopEvent($event)"
+                      >
+                        View Report
+                      </button>
+                    }
+
+                    <button
+                      mat-flat-button
+                      class="brand-button"
+                      type="button"
+                      (click)="openRun(run.id); stopEvent($event)"
+                    >
+                      {{ isCompleted(run) ? 'Open Run' : 'Continue Execution' }}
+                    </button>
+                  </div>
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+  }
+</section>

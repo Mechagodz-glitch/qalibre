@@ -1,0 +1,23 @@
+{
+  "testRun": {
+    "searchAlign": "left",
+    "placeholderAlign": "left",
+    "environmentAlign": "left",
+    "buildAlign": "left"
+  },
+  "testExecution": {
+    "searchAlign": "left",
+    "cardHeadBackground": "radial-gradient(circle at 100% 0%, rgba(85, 215, 237, 0.14), rgba(0, 0, 0, 0) 120px), linear-gradient(135deg, rgba(7, 26, 61, 0.96), rgba(20, 70, 99, 0.92))"
+  },
+  "generator": {
+    "sourceCols": 3,
+    "coverageCols": 2,
+    "kbTriggerJustify": "flex-start",
+    "kbValueAlign": "left"
+  },
+  "runHistory": {
+    "metricCards": 4,
+    "toolbarPresent": true,
+    "detailShellBackground": "linear-gradient(rgba(245, 251, 255, 0.98), rgba(255, 255, 255, 0.96))"
+  }
+}

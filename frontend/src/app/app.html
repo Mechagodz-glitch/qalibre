@@ -1,0 +1,100 @@
+@if (authLoading()) {
+  <section class="boot-screen" aria-live="polite" aria-busy="true">
+    <div class="boot-card">
+      <div class="boot-spinner"></div>
+      <p class="boot-kicker">QAlibre</p>
+      <h1>Loading your workspace</h1>
+      <p>Restoring your sign-in and page access.</p>
+    </div>
+  </section>
+} @else if (showShell()) {
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand-block">
+        <div class="brand-lockup">
+          <p class="brand-mark">QAlibre</p>
+          <span class="brand-subtitle">QA architect</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        @for (item of visiblePrimaryNav(); track item.route) {
+          <a
+            class="nav-item"
+            [routerLink]="item.route"
+            [class.active]="isNavActive(item.route)"
+          >
+            <span class="nav-icon" [class]="'nav-icon nav-icon--' + item.icon" aria-hidden="true">
+              @switch (item.icon) {
+                @case ('dashboard') {
+                  <svg viewBox="0 0 24 24">
+                    <path d="M4 13.5a8 8 0 1 1 16 0V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4.5Zm8-5.5a1 1 0 0 0-1 1v4.17l-2.24 2.25 1.42 1.41L13 14V9a1 1 0 0 0-1-1Z"></path>
+                  </svg>
+                }
+                @case ('generator') {
+                  <svg viewBox="0 0 24 24">
+                    <path d="M13 2 5 14h5l-1 8 8-12h-5l1-8Z"></path>
+                  </svg>
+                }
+                @case ('runs') {
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 3a9 9 0 1 1-8.49 6H1l3.5-3.5L8 9H5.58A7 7 0 1 0 12 5v4l5-5-5-5v4Z"></path>
+                  </svg>
+                }
+                @case ('suites') {
+                  <svg viewBox="0 0 24 24">
+                    <path d="m9.6 6.2 1.4 1.4-4.3 4.3-2.2-2.2 1.4-1.4 0.8 0.8 2.9-2.9ZM13 7h7v2h-7V7Zm0 8h7v2h-7v-2Zm-3.4-0.8 1.4 1.4-4.3 4.3-2.2-2.2 1.4-1.4 0.8 0.8 2.9-2.9Z"></path>
+                  </svg>
+                }
+                @case ('execution') {
+                  <svg viewBox="0 0 24 24">
+                    <path d="m8 5 11 7-11 7V5Zm-4 0h2v14H4V5Z"></path>
+                  </svg>
+                }
+                @case ('knowledge') {
+                  <svg viewBox="0 0 24 24">
+                    <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21V5.5Zm2.5-.5A1.5 1.5 0 0 0 5 6.5V18a3.5 3.5 0 0 1 1.5-.34H18V5H6.5Z"></path>
+                  </svg>
+                }
+                @case ('admin') {
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 2 4 5v6c0 5.25 3.55 9.91 8 11 4.45-1.09 8-5.75 8-11V5l-8-3Zm0 6.5A2.5 2.5 0 0 1 14.5 11a2.44 2.44 0 0 1-.9 1.88V15h-3.2v-2.12A2.44 2.44 0 0 1 9.5 11 2.5 2.5 0 0 1 12 8.5Z"></path>
+                  </svg>
+                }
+                @default {
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 3h2v9.17l2.59-2.58L18 11l-5 5-5-5 1.41-1.41L11 12.17V3Zm-7 14h14v2H5v-2Z"></path>
+                  </svg>
+                }
+              }
+            </span>
+            <span class="nav-copy">
+              <strong>{{ item.label }}</strong>
+            </span>
+          </a>
+        }
+      </nav>
+
+      <div class="sidebar-footer">
+        @if (currentUser()) {
+          <div class="user-card">
+            <div class="user-avatar">{{ currentUser()?.name?.slice(0, 1) ?? 'U' }}</div>
+            <div class="user-meta">
+              <strong>{{ currentUser()?.name }}</strong>
+            </div>
+          </div>
+        }
+
+        <button class="run-button" type="button" (click)="logout()">Sign out</button>
+      </div>
+    </aside>
+
+    <section class="workspace">
+      <main class="content">
+        <router-outlet />
+      </main>
+    </section>
+  </div>
+} @else {
+  <router-outlet />
+}

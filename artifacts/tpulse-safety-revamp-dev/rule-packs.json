@@ -1,0 +1,536 @@
+[
+  {
+    "name": "Authentication And Session Management",
+    "description": "Rules for sign-in, authenticated shell entry, session continuity, and account actions.",
+    "appliesToFeatureTypes": ["authentication", "session-management"],
+    "appliesToComponents": ["Login Form", "User Avatar Menu", "Sidebar Navigation Rail"],
+    "mandatoryScenarios": [
+      "Login renders both credential fields plus standard sign-in and SSO entry points.",
+      "Primary sign-in stays disabled until required credentials are present.",
+      "Valid sign-in reaches the authenticated shell cleanly.",
+      "Avatar menu exposes account actions such as Change Password and Logout."
+    ],
+    "negativeHeuristics": [
+      "Incomplete credentials must not submit.",
+      "Invalid credentials must not silently navigate into the shell.",
+      "Repeated sign-in attempts must not leave duplicate loading states."
+    ],
+    "edgeHeuristics": [
+      "Browser autofill should not break button enablement.",
+      "Long email values should remain readable."
+    ],
+    "securityHeuristics": [
+      "Passwords must stay masked.",
+      "Protected routes must require an active session.",
+      "Logout must remove access to previously protected pages."
+    ],
+    "performanceHeuristics": [
+      "Successful sign-in should reach a usable shell quickly.",
+      "Session restoration on refresh should not leave a partial shell."
+    ],
+    "accessibilityHeuristics": [
+      "Visible labels should stay associated with auth controls.",
+      "Keyboard users should be able to complete and submit the form."
+    ],
+    "defaultPriority": "P0",
+    "tags": ["authentication", "session", "login", "shell", "portal"]
+  },
+  {
+    "name": "Shell Navigation And Account Access",
+    "description": "Rules for the persistent shell, route switching, unread indicators, and account-menu reliability.",
+    "appliesToFeatureTypes": ["shell-navigation", "cross-module-access"],
+    "appliesToComponents": ["Sidebar Navigation Rail", "User Avatar Menu", "Pagination Control"],
+    "mandatoryScenarios": [
+      "Every major post-login module linked from the rail is reachable.",
+      "Active highlighting follows the current route.",
+      "Deep-link refresh preserves the shell and correct active state.",
+      "Unread notification indicators stay aligned with the notification entry."
+    ],
+    "negativeHeuristics": [
+      "Broken route transitions must not strand the user in an empty shell.",
+      "Rail highlighting must not point to the wrong module.",
+      "Unread badges must not overflow or disappear unpredictably."
+    ],
+    "edgeHeuristics": [
+      "Long labels and large unread counts should remain readable.",
+      "Repeated fast navigation should not corrupt active state."
+    ],
+    "securityHeuristics": [
+      "Account actions must operate only in the current authenticated session.",
+      "Shell navigation should not reveal inaccessible content before load completes."
+    ],
+    "performanceHeuristics": [
+      "Route switches should preserve shell responsiveness.",
+      "Unread indicators should update without blocking navigation."
+    ],
+    "accessibilityHeuristics": [
+      "Navigation labels should remain visible alongside icons.",
+      "Current section cues should not rely only on color."
+    ],
+    "defaultPriority": "P1",
+    "tags": ["navigation", "shell", "routing", "account-menu", "notifications"]
+  },
+  {
+    "name": "Shared Filtering And Scope Control",
+    "description": "Rules for the page-level unit multiselect and date-range controls that drive dashboard and downstream data refresh.",
+    "appliesToFeatureTypes": ["filtering", "scope-control", "dashboard-filtering"],
+    "appliesToComponents": ["Shared Filter Bar", "Filter Dialog"],
+    "mandatoryScenarios": [
+      "The unit selector shows the expected summary label and exposes Select All plus all available units.",
+      "All units start selected by default unless the product explicitly restores a persisted scope.",
+      "Unchecking Select All or the final remaining unit must never leave zero units selected.",
+      "Individual unit changes must keep Select All synchronized and refresh dependent widgets consistently.",
+      "The page-level date picker must support single-day and range selection and reopen with the current applied range highlighted.",
+      "Changing units must preserve the current date range, and changing dates must preserve the current unit selection."
+    ],
+    "negativeHeuristics": [
+      "Rapid unit and date changes must not leave stale data.",
+      "Invalid end-before-start ranges must be blocked or normalized cleanly.",
+      "Unsupported free-text typing should not bypass picker rules.",
+      "Future dates must stay blocked when the product is intended to report only up to the current day."
+    ],
+    "edgeHeuristics": [
+      "Long unit names and large unit lists should remain usable.",
+      "Leap-year, far-past, cross-month, and cross-year ranges should behave correctly.",
+      "Configured default-range behavior should stay stable across refreshes and releases."
+    ],
+    "securityHeuristics": [
+      "Filters must not surface data outside the selected units and dates.",
+      "Scope changes must not briefly expose stale data from a previous filter state."
+    ],
+    "performanceHeuristics": [
+      "Filter-driven reloads should show a loading state where appropriate.",
+      "Large unit lists and repeated scope updates should remain responsive."
+    ],
+    "accessibilityHeuristics": [
+      "The unit selector, checkboxes, and date picker should expose visible labels and predictable focus movement.",
+      "Selected and disabled states should be perceivable without relying only on color."
+    ],
+    "defaultPriority": "P0",
+    "tags": ["filters", "units", "date-range", "dashboard", "state-management"]
+  },
+  {
+    "name": "Dashboard KPI Cards And Segregation Drilldowns",
+    "description": "Rules for Home-page summary cards such as Total Observations, Risk Distribution, and configured observation-classification cards.",
+    "appliesToFeatureTypes": ["dashboard-kpi", "summary-cards", "drilldown"],
+    "appliesToComponents": ["Metric Card", "Visualization Panel"],
+    "mandatoryScenarios": [
+      "Total-style cards display a numeric total plus subordinate splits, and the split values add back to the total.",
+      "Risk-distribution cards display configured risk buckets, bucket counts, and a visual split whose proportions match the counts.",
+      "Configured observation-classification cards keep grouping mutually exclusive so a record is not counted in multiple buckets.",
+      "Card values update when units or date range change and do not retain stale counts after refresh or supported mutations.",
+      "Clicking a supported card drilldown opens exactly one contextual view and closing it retains the active page filters."
+    ],
+    "negativeHeuristics": [
+      "No-data states must render intentionally instead of breaking the layout.",
+      "Tooltip percentages must not divide by zero or show misleading values.",
+      "Repeated quick clicks must not open stacked overlays."
+    ],
+    "edgeHeuristics": [
+      "Extremely skewed distributions and very small bucket counts must still render correctly.",
+      "Very large counts should remain legible.",
+      "If product configuration changes classification labels, count integrity must still hold."
+    ],
+    "securityHeuristics": [
+      "Card drilldowns must remain scoped to the selected units and dates.",
+      "Summary cards must not leak hidden record state through mismatched totals."
+    ],
+    "performanceHeuristics": [
+      "KPI cards should refresh quickly enough to stay useful as landing-page widgets.",
+      "Tooltip and drilldown interactions should stay responsive after scope changes."
+    ],
+    "accessibilityHeuristics": [
+      "Counts, legends, and status labels should remain understandable without relying only on chart color.",
+      "Drilldown triggers should have clear labels or discernible names."
+    ],
+    "defaultPriority": "P1",
+    "tags": ["dashboard", "kpi", "risk-distribution", "totals", "drilldown"]
+  },
+  {
+    "name": "Dashboard Trend Visualization Tabs",
+    "description": "Rules for the Home-page trend area where Safety Trend and Category Trend share the same panel, scope filters, and no-data behavior.",
+    "appliesToFeatureTypes": ["dashboard-trends", "chart-tabs", "visualization"],
+    "appliesToComponents": ["Visualization Panel", "Shared Filter Bar"],
+    "mandatoryScenarios": [
+      "The dashboard trend area exposes both Safety Trend and Category Trend and keeps units and page-level dates intact while switching.",
+      "Safety Trend plots counts across chronological dates and Category Trend plots counts against configured categories.",
+      "Tooltips show the correct date or category label plus the correct count for the hovered point or bar.",
+      "Axis labels, icons, and grid alignment stay aligned to the displayed data set.",
+      "Changing page-level units or dates refreshes the active chart view and clears stale values."
+    ],
+    "negativeHeuristics": [
+      "Hovering between points or bars must not show misleading tooltip values.",
+      "No-data situations must render a clear empty state instead of a broken chart frame.",
+      "Rapid tab or filter changes must not leave the chart half rendered."
+    ],
+    "edgeHeuristics": [
+      "Single-day selections, zero-count days, and long date ranges should render correctly.",
+      "Very high category counts or many categories should not distort bar alignment or icon placement."
+    ],
+    "securityHeuristics": [
+      "Trend data must remain restricted to the active selected units and dates.",
+      "Chart tooltips and labels should not expose stale values from a previous filter state."
+    ],
+    "performanceHeuristics": [
+      "Trend charts should remain responsive during tab switches and scope updates.",
+      "Longer date ranges should not cause visible chart corruption or browser instability."
+    ],
+    "accessibilityHeuristics": [
+      "The active chart mode should be clear without depending only on color or hover.",
+      "Charts should retain visible titles and labels that communicate the current data context."
+    ],
+    "defaultPriority": "P1",
+    "tags": ["dashboard", "trend", "chart", "safety-trend", "category-trend"]
+  },
+  {
+    "name": "Life Saving Rule Category Monitoring",
+    "description": "Rules for the Life Saving Rule Category section, including compact and expanded states, category segregation, Selected Dates vs Custom Dates, and section-level custom-date independence.",
+    "appliesToFeatureTypes": ["category-monitoring", "life-saving-rules", "section-level-filtering"],
+    "appliesToComponents": ["Category Summary Tile Grid", "Shared Filter Bar"],
+    "mandatoryScenarios": [
+      "The section renders configured category cards and preserves correct totals for the active unit scope and active date mode.",
+      "Compact and Expanded presentation modes switch without overlapping or corrupting the layout.",
+      "Expanding a category reveals configured subordinate segregation, and subordinate counts add back to the category total.",
+      "Selected Dates follows the page-level date range, while Custom Dates applies its own section-level range without resetting units.",
+      "Switching back from Custom Dates restores page-level date behavior, and reopening the custom-date picker preserves the previously applied range where the product expects persistence."
+    ],
+    "negativeHeuristics": [
+      "Invalid custom date ranges must not be accepted.",
+      "Changing page-level dates while Custom Dates is active must not silently overwrite the section-level custom range.",
+      "API or data-load failures in this section must degrade gracefully without breaking the rest of the dashboard."
+    ],
+    "edgeHeuristics": [
+      "Long category names and large counts should remain readable.",
+      "Zero-data categories should show either zero segregation or a clear no-data state.",
+      "Rapid scope changes while a category is expanded must not leave stale segregation behind."
+    ],
+    "securityHeuristics": [
+      "Category totals and custom-date views must remain limited to the selected units and correct active date context.",
+      "Section-level date overrides must not expose records outside the intended temporal scope."
+    ],
+    "performanceHeuristics": [
+      "Expanding categories and switching date modes should remain responsive.",
+      "Section-level custom date changes should not stall unrelated dashboard widgets."
+    ],
+    "accessibilityHeuristics": [
+      "Category headings, mode toggles, and date controls should remain clearly labeled.",
+      "Expanded and collapsed states should be perceivable without relying only on icon changes."
+    ],
+    "defaultPriority": "P1",
+    "tags": ["life-saving-rules", "categories", "custom-dates", "dashboard", "segregation"]
+  },
+  {
+    "name": "High Risk Observation Carousel And Handoff",
+    "description": "Rules for the Home-page recent SIF and high-risk observation carousel, including qualification logic, auto-scroll, manual navigation, and handoff into Observations.",
+    "appliesToFeatureTypes": ["carousel", "high-risk-monitoring", "record-handoff"],
+    "appliesToComponents": ["Record Carousel", "Selectable Record List"],
+    "mandatoryScenarios": [
+      "The carousel shows the latest qualifying observations based on the product rule for SIF and high-risk content, including correct status and risk labels.",
+      "If a configured fallback rule applies when no qualifying items exist, the header and content switch cleanly to that fallback behavior.",
+      "Automatic scrolling moves smoothly, wraps correctly, and does not break manual Next and Previous controls.",
+      "Observation thumbnails or fallback media states load without collapsing the card layout.",
+      "Clicking a carousel card navigates to the corresponding observation detail context and preserves intended filter handoff behavior."
+    ],
+    "negativeHeuristics": [
+      "Closed or non-qualifying observations must not appear when the rule excludes them.",
+      "Manual navigation must not disable or corrupt automatic scrolling.",
+      "Repeated clicks must not open the wrong observation or multiple competing navigation states."
+    ],
+    "edgeHeuristics": [
+      "When fewer than the expected number of qualifying records exist, the carousel should still render a stable layout without empty placeholders.",
+      "When more than the limit exist, only the newest qualifying records should be shown."
+    ],
+    "securityHeuristics": [
+      "Navigation from the carousel should only open records the current user is allowed to access.",
+      "Record handoff should not reveal unrelated observation context after navigation."
+    ],
+    "performanceHeuristics": [
+      "Auto-scroll and manual navigation should remain smooth and should not cause flicker or overlapping images.",
+      "Carousel refreshes should stay responsive even when qualification changes after dashboard updates."
+    ],
+    "accessibilityHeuristics": [
+      "Previous and Next controls should have clear labels or discernible names.",
+      "Risk labels and record metadata should not depend only on color or imagery."
+    ],
+    "defaultPriority": "P2",
+    "tags": ["carousel", "sif", "high-risk", "dashboard", "observations"]
+  },
+  {
+    "name": "Dashboard Insights Assistant Interaction",
+    "description": "Rules for the EOS insights drawer on the dashboard, including insight cards, suggested questions, history state, and ask flow gating.",
+    "appliesToFeatureTypes": ["assistant-insights", "dashboard-assistant"],
+    "appliesToComponents": ["Assistant Drawer"],
+    "mandatoryScenarios": [
+      "The assistant area renders chat history state, insight cards, suggested questions, and the conversation composer.",
+      "The send action stays disabled until the user enters a valid prompt.",
+      "Ask EOS actions on insight cards stay aligned to the visible insight context.",
+      "The history panel reflects the current user context and updates cleanly after successful conversations."
+    ],
+    "negativeHeuristics": [
+      "Empty-history states must not appear as loading failures.",
+      "Backend or inference failures must not leave the drawer unusable.",
+      "Repeated prompt submissions must not create duplicated pending states."
+    ],
+    "edgeHeuristics": [
+      "Long insight narratives and longer chat histories should remain scrollable and readable.",
+      "Switching dashboard scope should not leave stale assistant content attached to the wrong filter context."
+    ],
+    "securityHeuristics": [
+      "Assistant history and prompts must remain tied to the active authenticated user context.",
+      "Insight cards must not leak stale data from previous unit or date selections."
+    ],
+    "performanceHeuristics": [
+      "The drawer should remain responsive while insights and conversations load.",
+      "Assistant interactions must not block surrounding dashboard controls."
+    ],
+    "accessibilityHeuristics": [
+      "Insight headings, buttons, and the conversation input should remain clearly labeled.",
+      "History and suggestion regions should be keyboard reachable in a sensible order."
+    ],
+    "defaultPriority": "P3",
+    "tags": ["assistant", "eos", "insights", "chat", "dashboard"]
+  },
+  {
+    "name": "Analytics Visualization And Hierarchical Data",
+    "description": "Rules for analytics pages that mix summary cards, chart panels, heat maps, and expandable treegrid data.",
+    "appliesToFeatureTypes": ["analytics", "visualization"],
+    "appliesToComponents": ["Metric Card", "Visualization Panel", "Expandable Treegrid Table", "Shared Filter Bar"],
+    "mandatoryScenarios": [
+      "Analytics summary cards reflect the currently selected units and date range.",
+      "Visualization controls switch the visible chart mode or slice as indicated by the UI.",
+      "Narrative or summary text shown with charts stays aligned with the visible data state.",
+      "Treegrid rows expand and collapse reliably and preserve row-to-child alignment.",
+      "Heat-map or trend panels degrade gracefully when no data is returned."
+    ],
+    "negativeHeuristics": [
+      "A chart-rendering failure must not break the rest of the analytics page.",
+      "Empty child datasets must not break row expansion or leave orphaned toggles.",
+      "Dense labels or legends must not overlap to the point of unusability."
+    ],
+    "edgeHeuristics": [
+      "Large time-series ranges should remain readable and performant.",
+      "Large unit hierarchies should remain scrollable and expandable."
+    ],
+    "securityHeuristics": [
+      "Analytics drilldowns must remain scoped to the current selected units and dates.",
+      "Inline actions inside analytics tables must not surface unrelated data."
+    ],
+    "performanceHeuristics": [
+      "Heavy visualization panels should render quickly enough for normal analytics use.",
+      "Treegrid expansion and collapse should remain responsive."
+    ],
+    "accessibilityHeuristics": [
+      "Charts should have surrounding titles and explanatory text.",
+      "Treegrid structure should remain keyboard-discernible where supported."
+    ],
+    "defaultPriority": "P1",
+    "tags": ["analytics", "charts", "treegrid", "heat-map", "trends"]
+  },
+  {
+    "name": "Timeline Review And Media Inspection",
+    "description": "Rules for the observation-review workspace that combines timeline selection, sort order, scoped filtering, and selected-record detail inspection.",
+    "appliesToFeatureTypes": ["timeline-review", "observation-inspection"],
+    "appliesToComponents": ["Timeline Explorer", "Record Detail Panel", "Shared Filter Bar", "Filter Dialog"],
+    "mandatoryScenarios": [
+      "Selecting a date or timeline entry updates the right-side detail context to the matching record set.",
+      "Sort-order changes alter the visible day sequence without corrupting counts or selection context.",
+      "Time filters or category chips scope the detail pane and visible observation subset consistently.",
+      "The selected-record detail panel displays metadata, comments area, and tabs that remain tied to the current selection.",
+      "Reset actions return the timeline to a stable baseline state."
+    ],
+    "negativeHeuristics": [
+      "Empty selected-day states must be clear instead of appearing broken.",
+      "Selected timeline entry and detail-pane metadata must not drift apart."
+    ],
+    "edgeHeuristics": [
+      "Dense days with many observations should remain navigable.",
+      "Large date ranges should preserve scrollability and usable sort/filter feedback."
+    ],
+    "securityHeuristics": [
+      "Review workspaces must not leak records outside the active scope.",
+      "Read-only inspection paths must not permit mutation without an explicit supported action."
+    ],
+    "performanceHeuristics": [
+      "Day selection and detail-pane refresh should remain responsive.",
+      "Timeline reset and filter operations should not leave an inconsistent loading state."
+    ],
+    "accessibilityHeuristics": [
+      "Visible headings, counters, and filters should remain clear between the two panes.",
+      "Selected-state cues should not rely solely on color."
+    ],
+    "defaultPriority": "P1",
+    "tags": ["timeline", "review", "observation", "detail-pane", "media-inspection"]
+  },
+  {
+    "name": "Record List Selection And Master Detail",
+    "description": "Cross-cutting rules for list-driven pages that combine toolbars, selectable rows or cards, detail panes, and pagination.",
+    "appliesToFeatureTypes": ["record-management", "master-detail"],
+    "appliesToComponents": ["Action Toolbar", "Selectable Record List", "Record Detail Panel", "Pagination Control"],
+    "mandatoryScenarios": [
+      "Lists render records with stable summary metadata and visible status cues.",
+      "Selecting a row or card updates the correct detail pane without cross-record leakage.",
+      "Bulk-action enablement follows the current selection state and disabled rows remain non-selectable.",
+      "Pagination updates the visible record slice and keeps result summaries aligned with the current page.",
+      "Sort and view-toggle controls update the list without corrupting detail selection."
+    ],
+    "negativeHeuristics": [
+      "Disabled selection controls must not toggle through keyboard or pointer interaction.",
+      "Pagination or filter changes must not retain an invalid selection against the wrong records."
+    ],
+    "edgeHeuristics": [
+      "Very long titles should wrap without overlapping action controls.",
+      "Large result sets should remain scrollable and pageable."
+    ],
+    "securityHeuristics": [
+      "Bulk and row-level actions should remain gated by visible selection and session state.",
+      "Detail panes should never show data for a record that is no longer selected."
+    ],
+    "performanceHeuristics": [
+      "List paging, sorting, and selection should remain responsive across larger result sets.",
+      "Detail-pane refresh should not stall the list surface."
+    ],
+    "accessibilityHeuristics": [
+      "Nested interactive regions in list cards should preserve a sensible focus order.",
+      "Status, selected state, and disabled state should be perceivable without relying only on color."
+    ],
+    "defaultPriority": "P1",
+    "tags": ["lists", "selection", "pagination", "master-detail", "toolbar"]
+  },
+  {
+    "name": "Action Workflow And Audit History",
+    "description": "Rules focused on action-detail metadata, workflow governance, linked observations, comments, evidence constraints, and chronological history views.",
+    "appliesToFeatureTypes": ["action-workflow", "audit-history"],
+    "appliesToComponents": ["Action Toolbar", "Record Detail Panel", "History Drawer"],
+    "mandatoryScenarios": [
+      "Action detail panels preserve alignment among status, assignee, due-date, and description metadata.",
+      "History drawers open against the currently selected action and show a chronologically sensible event stream.",
+      "Linked observations remain associated with the correct action context.",
+      "Visible comment-length and evidence-attachment constraints remain discoverable in the UI."
+    ],
+    "negativeHeuristics": [
+      "History overlays must not duplicate or open against the wrong action after selection changes.",
+      "Disabled workflow actions must not become executable through inconsistent state changes."
+    ],
+    "edgeHeuristics": [
+      "Long action descriptions and long history lists should remain readable and scrollable.",
+      "Large linked-observation sections should not destabilize the detail layout."
+    ],
+    "securityHeuristics": [
+      "Audit history must remain scoped to the selected action and not mix entries across records.",
+      "Evidence and comment affordances should enforce visible size and type constraints."
+    ],
+    "performanceHeuristics": [
+      "Opening action history should remain responsive and not block the main detail pane.",
+      "Large audit streams should remain usable without freezing surrounding controls."
+    ],
+    "accessibilityHeuristics": [
+      "History and detail sections should remain clearly titled.",
+      "Drawer dismissal and navigation should remain keyboard-operable."
+    ],
+    "defaultPriority": "P1",
+    "tags": ["actions", "workflow", "audit", "history", "evidence"]
+  },
+  {
+    "name": "Reports And Document Access",
+    "description": "Rules for report listing, report request entry, viewer resilience, and document-oriented workflows where the UI already exposes reporting surfaces.",
+    "appliesToFeatureTypes": ["reporting", "document-access"],
+    "appliesToComponents": ["Report Generation Modal", "Selectable Record List", "Pagination Control", "Action Toolbar"],
+    "mandatoryScenarios": [
+      "Custom report entry opens a modal with the required date fields visible.",
+      "Generate Report remains gated by the required date inputs.",
+      "Cancelling the report modal closes it without mutating surrounding page state.",
+      "Report lists preserve visible metadata and page navigation behavior.",
+      "Report-related UI surfaces degrade gracefully if the embedded document viewer or worker fails."
+    ],
+    "negativeHeuristics": [
+      "Generate must not proceed with missing required dates.",
+      "Viewer failures must not break the entire Reports page."
+    ],
+    "edgeHeuristics": [
+      "Wide date ranges should remain valid if supported.",
+      "Large report lists and long report names should remain usable."
+    ],
+    "securityHeuristics": [
+      "Report requests should remain scoped to the selected filters and optional user criteria shown in the UI.",
+      "Document-viewing surfaces should not expose unrelated content after a failed load."
+    ],
+    "performanceHeuristics": [
+      "Opening the report modal and navigating the report list should remain responsive.",
+      "Document-loading failures should not stall the rest of the page."
+    ],
+    "accessibilityHeuristics": [
+      "Required-field messaging in the modal should remain visible and understandable.",
+      "Modal focus handling should keep users within the report-request context until dismissed."
+    ],
+    "defaultPriority": "P2",
+    "tags": ["reports", "documents", "modal", "viewer", "date-range"]
+  },
+  {
+    "name": "Notification Feed And Alert Triage",
+    "description": "Rules for notification counts, feed browsing, unread-state integrity, per-item actions, mute settings, and safe handling of global feed actions.",
+    "appliesToFeatureTypes": ["notifications", "alert-triage"],
+    "appliesToComponents": ["Notification Center", "Notification Feed Item", "Metric Card", "Sidebar Navigation Rail", "Pagination Control"],
+    "mandatoryScenarios": [
+      "Notification center opens with summary counts and both Observation and Action tabs visible.",
+      "Switching tabs updates the visible feed and preserves the correct count context.",
+      "Unread indicators remain aligned between the notification center and shell badge surfaces.",
+      "Feed filters and mute settings apply consistently to the current notification view.",
+      "Per-item actions target the intended notification row without affecting adjacent items."
+    ],
+    "negativeHeuristics": [
+      "Global actions such as Mark All Read or Clear All must not trigger accidentally.",
+      "Broken deep links from a notification item must fail gracefully."
+    ],
+    "edgeHeuristics": [
+      "High unread counts and long notification text should remain readable.",
+      "Large feeds should remain pageable without badge-count drift."
+    ],
+    "securityHeuristics": [
+      "Notification content should only render for authenticated users in the current session.",
+      "Unread and clear actions should not affect the wrong item or the wrong feed type."
+    ],
+    "performanceHeuristics": [
+      "Feed paging and tab switching should remain responsive under larger notification volumes.",
+      "Unread counts should refresh without leaving the shell and feed in conflicting states."
+    ],
+    "accessibilityHeuristics": [
+      "Tab labels, summary headings, and notification text should remain visible and readable.",
+      "Icon-only actions should expose clear discernible names."
+    ],
+    "defaultPriority": "P1",
+    "tags": ["notifications", "alerts", "unread", "feed", "triage"]
+  },
+  {
+    "name": "Help And Reference Content Delivery",
+    "description": "Rules for tabbed reference content, category guidance, mapping guidance, and embedded user-manual delivery within the help workspace.",
+    "appliesToFeatureTypes": ["help-reference", "embedded-documentation"],
+    "appliesToComponents": ["Help Reference Workspace"],
+    "mandatoryScenarios": [
+      "All visible help tabs render and can be switched without corrupting the page layout.",
+      "Categorization and category-mapping content remains aligned with the currently selected tab.",
+      "The User Manual tab attempts to load its document frame and shows a stable container even when the asset is unavailable."
+    ],
+    "negativeHeuristics": [
+      "Missing or broken manual assets must fail gracefully instead of leaving a silent blank surface.",
+      "Rapid tab switching must not leave stale content from the previous help section behind."
+    ],
+    "edgeHeuristics": [
+      "Long category and mapping lists should remain scannable.",
+      "Mixed static cards and document-frame content should not destabilize the tab layout."
+    ],
+    "securityHeuristics": [
+      "Embedded reference content should remain within the expected help context.",
+      "Broken asset routing should not expose sensitive diagnostic detail to end users."
+    ],
+    "performanceHeuristics": [
+      "Help tabs should switch quickly enough to support reference lookup.",
+      "A failed document load should not freeze the rest of the Help page."
+    ],
+    "accessibilityHeuristics": [
+      "Tabbed help content should preserve clear labels for each tab.",
+      "Embedded manual content should expose a meaningful title or fallback text if the document cannot load."
+    ],
+    "defaultPriority": "P3",
+    "tags": ["help", "reference", "documentation", "tabs", "user-manual"]
+  }
+]

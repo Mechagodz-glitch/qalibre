@@ -1,0 +1,804 @@
+<input
+  #fileInput
+  type="file"
+  hidden
+  multiple
+  accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.md,.json,.png,.jpg,.jpeg,.webp,.gif,.bmp,.svg"
+  (change)="onFilesSelected($event)"
+/>
+
+@if (loading()) {
+  <section class="centered-shell">
+    <mat-spinner diameter="42"></mat-spinner>
+  </section>
+} @else {
+  <section class="page-stack">
+    <app-page-header
+      title="Knowledge Base Workspace"
+      description="Assemble uploaded documents, pasted notes, and structured QA knowledge into one authoring workspace for validation, linking, and refinement."
+      eyebrow="Unified knowledge authoring"
+    >
+      <div class="hero-action-deck">
+        <button mat-stroked-button type="button" class="hero-action-tile" (click)="triggerFileUpload()" [disabled]="uploading()">
+          <span class="hero-action-tile__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 3 7 8h3v6h4V8h3l-5-5Zm-7 13h14v4H5v-4Z"></path></svg>
+          </span>
+        {{ uploading() ? 'Uploading…' : 'Upload Document' }}
+      </button>
+      <button mat-stroked-button type="button" class="hero-action-tile" (click)="openCreateAsset('pastedText')">
+        <span class="hero-action-tile__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M16 4h-2.18A3 3 0 0 0 11 2a3 3 0 0 0-2.82 2H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10l4-4V6a2 2 0 0 0-2-2Zm-5-1a1 1 0 0 1 .95.68l.24.72h-2.38l.24-.72A1 1 0 0 1 11 3Zm5 14v3.17L19.17 17H16Zm2-2h-4v5H6V6h2v2h6V6h4v9Z"></path></svg>
+        </span>
+        <span>Paste Input</span>
+      </button>
+      <button mat-stroked-button type="button" class="hero-action-tile" (click)="openImportDialog()">
+        <span class="hero-action-tile__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M4 5h6v6H4V5Zm10 0h6v6h-6V5ZM4 15h6v6H4v-6Zm10 0h6v6h-6v-6Z"></path></svg>
+        </span>
+        <span>Bulk Import</span>
+      </button>
+      <button mat-flat-button class="brand-button ghost-create-button" type="button" (click)="openCreateStructured('componentCatalogue')">
+        Create Structured Item
+      </button>
+      </div>
+    </app-page-header>
+
+    <section class="summary-strip">
+      <mat-card class="summary-card">
+        <strong>{{ workspace()?.summary?.assetCount ?? 0 }}</strong>
+        <span>source assets</span>
+      </mat-card>
+      <mat-card class="summary-card">
+        <strong>{{ workspace()?.summary?.structuredCount ?? 0 }}</strong>
+        <span>structured items</span>
+      </mat-card>
+      <mat-card class="summary-card">
+        <strong>{{ workspace()?.summary?.linkedItemCount ?? 0 }}</strong>
+        <span>linked records</span>
+      </mat-card>
+      <mat-card class="summary-card summary-card--review">
+        <strong>{{ workspace()?.summary?.needsReviewCount ?? 0 }}</strong>
+        <span>awaiting approval</span>
+      </mat-card>
+    </section>
+
+    @if (learningSuggestions().length) {
+      <mat-card class="learning-suggestions-strip">
+        <mat-card-content>
+          <div class="learning-suggestions-strip__header">
+            <div>
+              <p class="section-label">Learning suggestions</p>
+              <strong>{{ learningSuggestions().length }} pending safe-learning update{{ learningSuggestions().length === 1 ? '' : 's' }}</strong>
+            </div>
+            <span class="muted-copy">Approving here routes changes through the safe KB/refinement flow.</span>
+          </div>
+
+          <div class="learning-suggestion-list">
+            @for (suggestion of learningSuggestions(); track suggestion.id) {
+              <article class="learning-suggestion-card">
+                <div class="learning-suggestion-card__copy">
+                  <div class="learning-suggestion-card__meta">
+                    <span class="status-pill status-draft">{{ suggestionTargetLabel(suggestion) }}</span>
+                    <span class="muted-copy">{{ suggestionScopeLabel(suggestion) }}</span>
+                  </div>
+                  <strong>{{ suggestion.title }}</strong>
+                  @if (suggestion.summary) {
+                    <p>{{ suggestion.summary }}</p>
+                  }
+                  <small>{{ suggestion.triggerType }} · {{ suggestion.createdAt | date: 'medium' }}</small>
+                </div>
+                <div class="learning-suggestion-card__actions">
+                  <button
+                    mat-flat-button
+                    class="brand-button"
+                    type="button"
+                    (click)="approveSuggestion(suggestion.id)"
+                    [disabled]="suggestionActionId() === suggestion.id"
+                  >
+                    {{ suggestionActionId() === suggestion.id ? 'Applying…' : 'Approve' }}
+                  </button>
+                  <button
+                    mat-button
+                    type="button"
+                    class="danger-text"
+                    (click)="rejectSuggestion(suggestion.id)"
+                    [disabled]="suggestionActionId() === suggestion.id"
+                  >
+                    Reject
+                  </button>
+                </div>
+              </article>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+
+    <mat-card class="filter-surface">
+      <mat-card-content>
+        <div class="tab-strip">
+          @for (tab of tabOptions; track tab.key) {
+            <button
+              type="button"
+              class="tab-pill"
+              [class.active]="activeTab() === tab.key"
+              (click)="setTab(tab.key)"
+            >
+              {{ tab.label }}
+            </button>
+          }
+        </div>
+
+        <div class="filter-toolbar">
+          <mat-form-field appearance="outline" class="filter-grid__search">
+            <mat-label>Search</mat-label>
+            <input matInput [formControl]="filters.controls.search" placeholder="Search titles, text, or tags" />
+          </mat-form-field>
+
+          <section class="source-intake-inline">
+            <div class="source-intake-inline__meta">
+              <div>
+                <p class="section-label">Source intake</p>
+                <strong>Bring in source material or structured knowledge</strong>
+              </div>
+              <button mat-button type="button" (click)="openImportDialog()">Bulk Import</button>
+            </div>
+
+            <div class="source-intake-inline__actions">
+              <button mat-stroked-button type="button" class="source-intake-inline__button" (click)="triggerFileUpload()" [disabled]="uploading()">
+                {{ uploading() ? 'Uploading...' : 'Upload Source' }}
+              </button>
+              <button mat-stroked-button type="button" class="source-intake-inline__button" (click)="openCreateAsset('pastedText')">
+                Paste Input
+              </button>
+              <button mat-stroked-button type="button" class="source-intake-inline__button" (click)="openCreateStructured('componentCatalogue')">
+                Create Structured Knowledge
+              </button>
+            </div>
+          </section>
+        </div>
+
+      </mat-card-content>
+    </mat-card>
+
+    <section class="workspace-grid">
+      <mat-card class="library-pane">
+        <mat-card-content class="library-pane__content">
+          <div class="pane-header">
+            <div>
+              <p class="section-label">Library Records</p>
+              <strong>{{ filteredEntries().length }}</strong>
+              <span>records in view</span>
+            </div>
+            <small class="selection-pill">{{ selectedKeys().length }} selected</small>
+          </div>
+
+          @if (!filteredEntries().length) {
+            <app-empty-state
+              title="No knowledge records match this view"
+              description="Widen the filters, upload a source, or create structured knowledge to begin."
+            />
+          } @else {
+            <div class="entry-list">
+              @for (entry of filteredEntries(); track entry.key) {
+                <article
+                  class="entry-card"
+                  [class.active]="(entry.rawAsset && currentAsset()?.id === entry.rawAsset.id) || (entry.rawStructured && currentStructuredItem()?.id === entry.rawStructured.id)"
+                  (click)="entry.entryType === 'asset' ? openAsset(entry.rawAsset!) : openStructured(entry.rawStructured!)"
+                >
+                  <div class="entry-leading">
+                    <span class="entry-icon" aria-hidden="true">
+                      @if (entry.entryType === 'asset') {
+                        <svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 1.5V8h4.5L14 3.5Z"></path></svg>
+                      } @else {
+                        <svg viewBox="0 0 24 24"><path d="M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z"></path></svg>
+                      }
+                    </span>
+                    <mat-checkbox
+                      [checked]="isSelected(entry)"
+                      (click)="$event.stopPropagation()"
+                      (change)="toggleSelection(entry)"
+                    />
+                  </div>
+                  <div class="entry-body">
+                    <div class="entry-headline">
+                      <h3>{{ entry.title }}</h3>
+                      <span class="status-pill" [class]="'status-' + entry.status">{{ entry.statusLabel }}</span>
+                    </div>
+                    <p class="entry-type">{{ entry.typeLabel }}</p>
+                    @if (entry.summary) {
+                      <p class="entry-summary">{{ entry.summary }}</p>
+                    }
+                    <div class="entry-meta">
+                      <span>{{ entry.linkedCount }} linked</span>
+                      <span>Updated {{ entry.updatedAt | date: 'mediumDate' }}</span>
+                    </div>
+                    @if (entry.tags.length) {
+                      <div class="tag-row">
+                        @for (tag of entry.tags.slice(0, 4); track tag) {
+                          <span class="tag-chip">{{ tag }}</span>
+                        }
+                        @if (entry.tags.length > 4) {
+                          <span class="tag-chip">+{{ entry.tags.length - 4 }} more</span>
+                        }
+                      </div>
+                    }
+                  </div>
+                </article>
+              }
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="inspector-pane">
+        <mat-card-content class="inspector-pane__content">
+          @if (inspector().type === 'empty') {
+            <section class="empty-inspector">
+              <div class="empty-inspector__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8h-8l-2-4Zm2 6H4v8h16v-8h-8Z"></path></svg>
+              </div>
+              <h2>Select or create a knowledge record</h2>
+              <p>Select a record from the library on the left, or start by uploading and approving a source before linking it into reusable knowledge.</p>
+
+              @if (searchTerm()) {
+                <section class="search-results-block">
+                  <div class="section-heading">
+                    <p class="section-label">Search results</p>
+                    <strong>Matching linked-record candidates</strong>
+                  </div>
+
+                  @if (emptySearchResults().structured.length) {
+                    <div class="linked-record-list">
+                      @for (item of emptySearchResults().structured; track item.id) {
+                        <article class="linked-record-card">
+                          <div class="linked-record-card__head">
+                            <div>
+                              <p class="section-label">Structured knowledge</p>
+                              <strong>{{ item.title }}</strong>
+                            </div>
+                            <small>{{ getEntityLabel(item.itemType) }}</small>
+                          </div>
+                          @if (item.summary) {
+                            <p class="linked-record-card__note">{{ item.summary }}</p>
+                          }
+                          <div class="linked-record-card__actions">
+                            <button mat-button type="button" class="linked-record-card__link-action" (click)="openStructured(item)">
+                              Open
+                            </button>
+                          </div>
+                        </article>
+                      }
+                    </div>
+                  }
+
+                  @if (emptySearchResults().assets.length) {
+                    <div class="linked-record-list">
+                      @for (asset of emptySearchResults().assets; track asset.id) {
+                        <article class="linked-record-card">
+                          <div class="linked-record-card__head">
+                            <div>
+                              <p class="section-label">Approved source</p>
+                              <strong>{{ asset.title }}</strong>
+                            </div>
+                            <small>{{ getAssetStatusLabel(asset.reviewStatus) }}</small>
+                          </div>
+                          @if (asset.summary) {
+                            <p class="linked-record-card__note">{{ asset.summary }}</p>
+                          }
+                          <div class="linked-record-card__actions">
+                            <button mat-button type="button" class="linked-record-card__link-action" (click)="openAsset(asset)">
+                              Open
+                            </button>
+                          </div>
+                        </article>
+                      }
+                    </div>
+                  }
+
+                  @if (!emptySearchResults().structured.length && !emptySearchResults().assets.length) {
+                    <p class="muted-copy">No approved sources or structured records match the current search.</p>
+                  }
+                </section>
+              }
+            </section>
+          }
+
+          @if (inspector().type === 'asset') {
+            <section class="inspector-stack">
+              <div class="inspector-header">
+                <div>
+                  <p class="eyebrow">{{ currentAsset() ? 'Knowledge source' : 'New source input' }}</p>
+                  <h2>{{ currentAsset()?.title || 'Create source input' }}</h2>
+                </div>
+                @if (currentAsset()) {
+                  <button mat-button type="button" (click)="openSeededStructuredFromAsset()">Convert to structured item</button>
+                }
+              </div>
+
+              @if (currentAsset(); as asset) {
+                <section class="preview-block approval-block" [class.approval-block--warning]="asset.reviewStatus === 'raw'">
+                  <div class="section-heading">
+                    <p class="section-label">Approval status</p>
+                    <strong>{{ getAssetStatusLabel(asset.reviewStatus) }}</strong>
+                  </div>
+                  @if (asset.reviewStatus === 'raw') {
+                    <p class="muted-copy">This source still needs approval. It cannot be used as reusable knowledge until it is approved.</p>
+                  } @else if (asset.reviewStatus === 'reviewed') {
+                    <p class="muted-copy">This source is approved and ready to be linked into reusable knowledge.</p>
+                  } @else if (asset.reviewStatus === 'linked') {
+                    <p class="muted-copy">This source is approved and already linked to reusable knowledge.</p>
+                  } @else {
+                    <p class="muted-copy">This source is archived and should be restored before reuse.</p>
+                  }
+                </section>
+
+                <section class="preview-block">
+                  <div class="section-heading">
+                    <p class="section-label">Linked records</p>
+                    <strong>Reusable knowledge connected to this source</strong>
+                  </div>
+                  @if (currentAssetLinks().length) {
+                    <div class="linked-record-list">
+                      @for (link of currentAssetLinks(); track link.id) {
+                        <article class="linked-record-card">
+                          <div class="linked-record-card__head">
+                            <div>
+                              <p class="section-label">Structured item</p>
+                              <strong>{{ link.datasetItemTitle }}</strong>
+                            </div>
+                            <small>{{ getEntityLabel(link.datasetItemType) }}</small>
+                          </div>
+                          @if (getLinkedStructuredSummary(link.datasetItemId)) {
+                            <p class="linked-record-card__note">{{ getLinkedStructuredSummary(link.datasetItemId) }}</p>
+                          }
+                          @if (link.notes) {
+                            <p class="linked-record-card__note">Link note: {{ link.notes }}</p>
+                          }
+                          @if (getLinkedStructuredTags(link.datasetItemId).length) {
+                            <div class="tag-row">
+                              @for (tag of getLinkedStructuredTags(link.datasetItemId).slice(0, 5); track tag) {
+                                <span class="tag-chip">{{ tag }}</span>
+                              }
+                            </div>
+                          }
+                          <div class="linked-record-card__actions">
+                            <button mat-button type="button" class="linked-record-card__link-action" (click)="openLinkedStructuredPreview(link.datasetItemId)">
+                              Open
+                            </button>
+                            <button mat-button type="button" class="linked-record-card__link-action danger-text" (click)="removeLinkFromAsset(link.id)">
+                              Unlink
+                            </button>
+                          </div>
+                        </article>
+                      }
+                    </div>
+                  } @else {
+                    <p class="muted-copy">No structured knowledge is linked to this source yet.</p>
+                  }
+                </section>
+
+                @if (searchTerm()) {
+                  <section class="preview-block search-results-block">
+                    <div class="section-heading">
+                      <p class="section-label">Search results</p>
+                      <strong>Matching structured records</strong>
+                    </div>
+                    @if (currentAssetSearchResults().length) {
+                      <div class="linked-record-list">
+                        @for (result of currentAssetSearchResults(); track result.item.id) {
+                          <article class="linked-record-card">
+                            <div class="linked-record-card__head">
+                              <div>
+                                <p class="section-label">Structured item</p>
+                                <strong>{{ result.item.title }}</strong>
+                              </div>
+                              <small>{{ getEntityLabel(result.item.itemType) }}</small>
+                            </div>
+                            @if (result.item.summary) {
+                              <p class="linked-record-card__note">{{ result.item.summary }}</p>
+                            }
+                            <div class="linked-record-card__actions">
+                              <button mat-button type="button" class="linked-record-card__link-action" (click)="openStructured(result.item)">
+                                Open
+                              </button>
+                              @if (result.alreadyLinked) {
+                                <span class="status-pill status-linked">Linked</span>
+                              } @else {
+                                <button
+                                  mat-flat-button
+                                  class="brand-button"
+                                  type="button"
+                                  (click)="addLinkToAsset(result.item.id)"
+                                  [disabled]="saving() || !isApprovedAsset(asset.reviewStatus)"
+                                >
+                                  Link record
+                                </button>
+                              }
+                            </div>
+                          </article>
+                        }
+                      </div>
+                    } @else {
+                      <p class="muted-copy">Search the page and matching approved structured records will appear here for quick review and linking.</p>
+                    }
+                  </section>
+                }
+              }
+
+              <form class="editor-form">
+                <mat-form-field appearance="outline">
+                  <mat-label>Input type</mat-label>
+                  <mat-select [formControl]="assetForm.controls.kind">
+                    @for (option of assetKindOptions; track option.value) {
+                      <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Review status</mat-label>
+                  <mat-select [formControl]="assetForm.controls.reviewStatus">
+                    @for (option of assetStatusOptions; track option.value) {
+                      <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="full-span">
+                  <mat-label>Title</mat-label>
+                  <input matInput [formControl]="assetForm.controls.title" />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="full-span">
+                  <mat-label>Summary</mat-label>
+                  <textarea matInput rows="3" [formControl]="assetForm.controls.summary"></textarea>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Source format</mat-label>
+                  <input matInput [formControl]="assetForm.controls.sourceFormat" placeholder="pdf, docx, xlsx, image, note" />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>File name</mat-label>
+                  <input matInput [formControl]="assetForm.controls.fileName" />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>MIME type</mat-label>
+                  <input matInput [formControl]="assetForm.controls.mimeType" />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Tags</mat-label>
+                  <textarea matInput rows="3" [formControl]="assetForm.controls.tagsText"></textarea>
+                  <mat-hint>Enter one tag per line or comma-separated.</mat-hint>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Project</mat-label>
+                  <mat-select [formControl]="assetForm.controls.projectId" (selectionChange)="onAssetProjectChange()">
+                    <mat-option value="">No project</mat-option>
+                    @for (project of assetProjectOptions(); track project.id) {
+                      <mat-option [value]="project.id">{{ project.name }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Module</mat-label>
+                  <mat-select [formControl]="assetForm.controls.moduleId" (selectionChange)="onAssetModuleChange()">
+                    <mat-option value="">No module</mat-option>
+                    @for (module of assetModuleOptions(); track module.id) {
+                      <mat-option [value]="module.id">{{ module.name }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Page</mat-label>
+                  <mat-select [formControl]="assetForm.controls.pageId">
+                    <mat-option value="">No page</mat-option>
+                    @for (page of assetPageOptions(); track page.id) {
+                      <mat-option [value]="page.id">{{ page.name }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="full-span">
+                  <mat-label>Extracted / pasted content</mat-label>
+                  <textarea matInput rows="14" [formControl]="assetForm.controls.contentText"></textarea>
+                </mat-form-field>
+              </form>
+
+              @if (assetPreviewDataUrl()) {
+                <section class="preview-block">
+                  <p class="section-label">Preview</p>
+                  <img class="image-preview" [src]="assetPreviewDataUrl()" alt="Knowledge source preview" />
+                </section>
+              }
+
+              @if (currentAsset(); as asset) {
+                <section class="preview-block legacy-hidden" aria-hidden="true">
+                  <div class="section-heading">
+                    <p class="section-label">Linked structured items</p>
+                  </div>
+                  @if (asset.links.length) {
+                    <div class="linked-record-list">
+                      @for (link of asset.links; track link.id) {
+                        <article class="linked-record-card">
+                          <div class="linked-record-card__head">
+                            <div>
+                              <p class="section-label">Structured item</p>
+                              <strong>{{ link.datasetItemTitle }}</strong>
+                            </div>
+                            <small>{{ getEntityLabel(link.datasetItemType) }} · {{ link.datasetItemStatus }}</small>
+                          </div>
+                          <button mat-button type="button" class="linked-record-card__button" (click)="removeLinkFromAsset(link.id)">Unlink</button>
+                        </article>
+                      }
+                    </div>
+                  } @else {
+                    <p class="muted-copy">This source has not been linked to any structured knowledge yet.</p>
+                  }
+
+                  <div class="link-form">
+                    <mat-form-field appearance="outline">
+                      <mat-label>Link to structured item</mat-label>
+                      <mat-select [formControl]="linkControl">
+                        <mat-option value="">Select item</mat-option>
+                        @for (item of availableLinkTargets(); track item.id) {
+                          <mat-option [value]="item.id">{{ item.title }} · {{ getEntityLabel(item.itemType) }}</mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+                    <mat-form-field appearance="outline">
+                      <mat-label>Link note</mat-label>
+                      <input matInput [formControl]="linkNotesControl" />
+                    </mat-form-field>
+                    <button mat-flat-button class="brand-button" type="button" (click)="addLinkToAsset()">Link item</button>
+                  </div>
+                </section>
+              }
+
+              @if (assetExtractedMetadata()) {
+                <section class="preview-block">
+                  <p class="section-label">Extraction details</p>
+                  <pre>{{ assetExtractedMetadata() | json }}</pre>
+                </section>
+              }
+
+              <div class="editor-actions">
+                <button mat-flat-button class="brand-button" type="button" (click)="saveAsset()" [disabled]="saving()">
+                  {{ currentAsset() ? 'Save source' : 'Create source' }}
+                </button>
+                @if (currentAsset()) {
+                  <button mat-button type="button" class="danger-text" (click)="deleteAsset()" [disabled]="saving()">Delete</button>
+                }
+              </div>
+            </section>
+          }
+
+          @if (inspector().type === 'structured') {
+            <section class="inspector-stack">
+              <div class="inspector-header">
+                <div>
+                  <p class="eyebrow">{{ currentStructuredItem() ? 'Structured knowledge' : 'New structured item' }}</p>
+                  <h2>{{ currentStructuredItem()?.title || 'Create structured knowledge' }}</h2>
+                </div>
+                @if (currentStructuredItem(); as item) {
+                  <div class="legacy-links">
+                    <a mat-button [routerLink]="['/', getStructuredRoute(item.itemType), item.id]">
+                      Open legacy detail
+                    </a>
+                    <a mat-button [routerLink]="['/', getStructuredRoute(item.itemType), item.id, 'edit']">
+                      Open full editor
+                    </a>
+                  </div>
+                }
+              </div>
+
+              <div class="structured-controls">
+                <mat-form-field appearance="outline">
+                  <mat-label>Structured type</mat-label>
+                  <mat-select [formControl]="structuredItemTypeControl" (selectionChange)="onStructuredTypeChange($event.value)">
+                    @for (config of entityConfigs; track config.key) {
+                      <mat-option [value]="config.key">{{ config.label }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Status</mat-label>
+                  <mat-select [formControl]="structuredStatusControl">
+                    <mat-option value="draft">Draft</mat-option>
+                    <mat-option value="approved">Approved</mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <div class="structured-helper-row">
+                <p class="muted-copy">Start with the main knowledge fields first. Use advanced fields only when the record really needs more structure.</p>
+                @if (hasAdvancedStructuredFields(structuredItemTypeControl.getRawValue())) {
+                  <button mat-button type="button" (click)="toggleStructuredFieldMode()">
+                    {{ showAdvancedStructuredFields() ? 'Hide advanced fields' : 'Show advanced fields' }}
+                  </button>
+                }
+              </div>
+
+              @if (isProjectMemoryType()) {
+                <section class="structured-scope-panel">
+                  <div class="section-heading">
+                    <p class="section-label">Project memory scope</p>
+                    <strong>Only matching future runs should inherit this memory</strong>
+                  </div>
+
+                  <div class="structured-scope-panel__grid" [formGroup]="structuredScopeForm">
+                    <mat-form-field appearance="outline">
+                      <mat-label>Project</mat-label>
+                      <mat-select formControlName="projectId" (selectionChange)="onStructuredProjectChange($event.value)">
+                        <mat-option value="">No project</mat-option>
+                        @for (project of structuredProjectOptions(); track project.id) {
+                          <mat-option [value]="project.id">{{ project.name }}</mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                      <mat-label>Module</mat-label>
+                      <mat-select formControlName="moduleId" (selectionChange)="onStructuredModuleChange($event.value)">
+                        <mat-option value="">No module</mat-option>
+                        @for (module of structuredModuleOptions(); track module.id) {
+                          <mat-option [value]="module.id">{{ module.name }}</mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                      <mat-label>Page</mat-label>
+                      <mat-select formControlName="pageId">
+                        <mat-option value="">No page</mat-option>
+                        @for (page of structuredPageOptions(); track page.id) {
+                          <mat-option [value]="page.id">{{ page.name }}</mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+                  </div>
+                </section>
+              }
+
+              @if (currentStructuredItem(); as item) {
+                <section class="preview-block">
+                  <div class="section-heading">
+                    <p class="section-label">Linked records</p>
+                    <strong>Approved sources connected to this knowledge item</strong>
+                  </div>
+                  @if (currentStructuredLinkedAssets().length) {
+                    <div class="linked-record-list">
+                      @for (asset of currentStructuredLinkedAssets(); track asset.id) {
+                        <article class="linked-record-card">
+                          <div class="linked-record-card__head">
+                            <div>
+                              <p class="section-label">Approved source</p>
+                              <strong>{{ asset.title }}</strong>
+                            </div>
+                            <small>{{ asset.kind }}{{ asset.sourceFormat ? ' | ' + asset.sourceFormat : '' }}</small>
+                          </div>
+                          <div class="linked-record-card__actions">
+                            <button mat-button type="button" class="linked-record-card__link-action" (click)="openLinkedAssetPreview(asset.id)">
+                              Open
+                            </button>
+                          </div>
+                        </article>
+                      }
+                    </div>
+                  } @else {
+                    <p class="muted-copy">No approved source is linked to this structured item yet.</p>
+                  }
+                </section>
+
+                @if (searchTerm()) {
+                  <section class="preview-block search-results-block">
+                    <div class="section-heading">
+                      <p class="section-label">Search results</p>
+                      <strong>Matching approved sources</strong>
+                    </div>
+                    @if (currentStructuredSearchResults().length) {
+                      <div class="linked-record-list">
+                        @for (result of currentStructuredSearchResults(); track result.asset.id) {
+                          <article class="linked-record-card">
+                            <div class="linked-record-card__head">
+                              <div>
+                                <p class="section-label">Approved source</p>
+                                <strong>{{ result.asset.title }}</strong>
+                              </div>
+                              <small>{{ getAssetStatusLabel(result.asset.reviewStatus) }}</small>
+                            </div>
+                            @if (result.asset.summary) {
+                              <p class="linked-record-card__note">{{ result.asset.summary }}</p>
+                            }
+                            <div class="linked-record-card__actions">
+                              <button mat-button type="button" class="linked-record-card__link-action" (click)="openAsset(result.asset)">
+                                Open
+                              </button>
+                              @if (result.alreadyLinked) {
+                                <span class="status-pill status-linked">Linked</span>
+                              }
+                            </div>
+                          </article>
+                        }
+                      </div>
+                    } @else {
+                      <p class="muted-copy">Search the page and matching approved sources will appear here.</p>
+                    }
+                  </section>
+                }
+              }
+
+              <form class="editor-form">
+                @for (field of getStructuredWorkspaceFields(structuredItemTypeControl.getRawValue()); track field.key) {
+                  <mat-form-field appearance="outline" class="full-span">
+                    <mat-label>{{ field.label }}</mat-label>
+                    @if (field.type === 'textarea' || field.type === 'stringList' || field.type === 'json') {
+                      <textarea
+                        matInput
+                        [rows]="field.rows ?? (field.type === 'stringList' ? 5 : 4)"
+                        [formControl]="getStructuredControl(field.key)"
+                      ></textarea>
+                    } @else {
+                      <input matInput [formControl]="getStructuredControl(field.key)" />
+                    }
+                    @if (field.hint) {
+                      <mat-hint>{{ field.hint }}</mat-hint>
+                    } @else if (field.type === 'stringList') {
+                      <mat-hint>Enter one value per line or comma-separated.</mat-hint>
+                    }
+                  </mat-form-field>
+                }
+              </form>
+
+              @if (currentStructuredItem(); as item) {
+                <section class="preview-block legacy-hidden" aria-hidden="true">
+                  <p class="section-label">Linked source assets</p>
+                  @if (item.linkedAssetsPreview.length) {
+                    <div class="linked-record-list">
+                      @for (asset of item.linkedAssetsPreview; track asset.id) {
+                        <article class="linked-record-card">
+                          <div class="linked-record-card__head">
+                            <div>
+                              <p class="section-label">Linked source</p>
+                              <strong>{{ asset.title }}</strong>
+                            </div>
+                            <small>{{ asset.kind }}{{ asset.sourceFormat ? ' · ' + asset.sourceFormat : '' }}</small>
+                          </div>
+                          <button mat-button type="button" class="linked-record-card__button" (click)="openLinkedAssetPreview(asset.id)">Open</button>
+                        </article>
+                      }
+                    </div>
+                  } @else {
+                    <p class="muted-copy">No uploaded source is linked to this structured item yet.</p>
+                  }
+                </section>
+              }
+
+              <div class="editor-actions">
+                <button mat-flat-button class="brand-button" type="button" (click)="saveStructured()" [disabled]="saving()">
+                  {{ currentStructuredItem() ? 'Save structured knowledge' : 'Create structured knowledge' }}
+                </button>
+                @if (currentStructuredItem()) {
+                  @if (currentStructuredItem()?.status === 'archived') {
+                    <button mat-button type="button" (click)="restoreStructured()" [disabled]="saving()">Restore</button>
+                  } @else {
+                    <button mat-button type="button" (click)="archiveStructured()" [disabled]="saving()">Archive</button>
+                  }
+                  <button mat-button type="button" class="danger-text" (click)="deleteStructured()" [disabled]="saving()">Delete</button>
+                }
+              </div>
+            </section>
+          }
+        </mat-card-content>
+      </mat-card>
+    </section>
+  </section>
+}

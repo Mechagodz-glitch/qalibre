@@ -1,0 +1,142 @@
+@import '@angular/material/prebuilt-themes/azure-blue.css';
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap');
+
+:root {
+  color-scheme: light;
+  --font-sans: 'Inter', sans-serif;
+  --font-display: 'Manrope', sans-serif;
+  --surface: #f3faff;
+  --surface_container_low: #e6f6ff;
+  --surface_container_high: #d9eef8;
+  --surface_container_highest: #cfe6f2;
+  --surface_container_lowest: #ffffff;
+  --surface_dim: #c7dde9;
+  --surface-card: var(--surface_container_lowest);
+  --surface-border: rgba(7, 30, 39, 0.12);
+  --on-surface: #071e27;
+  --text-strong: var(--on-surface);
+  --text-muted: #5d7684;
+  --accent: #00464a;
+  --accent-dark: #006064;
+  --accent-soft: #55d7ed;
+  --success: #1b6d24;
+  --success-soft: #a3f69c;
+  --danger: #a4283d;
+
+  /* Angular Material typography tokens */
+  --mdc-typography-font-family: var(--font-sans);
+  --mat-app-text-font: var(--font-sans);
+  --mat-sys-body-large-font: var(--font-sans);
+  --mat-sys-body-medium-font: var(--font-sans);
+  --mat-sys-body-small-font: var(--font-sans);
+  --mat-sys-label-large-font: var(--font-sans);
+  --mat-sys-label-medium-font: var(--font-sans);
+  --mat-sys-label-small-font: var(--font-sans);
+  --mat-sys-title-large-font: var(--font-display);
+  --mat-sys-title-medium-font: var(--font-display);
+  --mat-sys-title-small-font: var(--font-display);
+  --mat-sys-headline-large-font: var(--font-display);
+  --mat-sys-headline-medium-font: var(--font-display);
+  --mat-sys-headline-small-font: var(--font-display);
+  --mat-sys-display-large-font: var(--font-display);
+  --mat-sys-display-medium-font: var(--font-display);
+  --mat-sys-display-small-font: var(--font-display);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  font-family: var(--font-sans);
+}
+
+html {
+  font-size: 15px;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--text-strong);
+  background:
+    radial-gradient(circle at top left, rgba(85, 215, 237, 0.16), transparent 18rem),
+    linear-gradient(180deg, #f7fcff, #eef8fd 46%, #f3faff);
+}
+
+@media (max-width: 1800px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 1440px) {
+  html {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 1280px) {
+  html {
+    font-size: 12px;
+  }
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  letter-spacing: -0.03em;
+}
+
+button,
+input,
+select,
+textarea,
+.mat-typography,
+.mat-mdc-card,
+.mat-mdc-form-field,
+.mat-mdc-table,
+.mat-mdc-option,
+.mat-mdc-menu-item,
+.mat-mdc-tab,
+.mdc-button,
+.mdc-list-item,
+.mdc-tab__text-label {
+  font-family: var(--font-sans) !important;
+}
+
+mat-card {
+  border-radius: 1.2rem !important;
+  background: var(--surface-card) !important;
+  border: none !important;
+  box-shadow: 0 12px 32px rgba(7, 30, 39, 0.06) !important;
+}
+
+.brand-button.mdc-button,
+.brand-button.mat-mdc-unelevated-button {
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark)) !important;
+  color: white !important;
+  border-radius: 0.65rem !important;
+}
+
+.snackbar-success .mdc-snackbar__surface {
+  background: #0b725c !important;
+  color: white !important;
+}
+
+.snackbar-error .mdc-snackbar__surface {
+  background: var(--danger) !important;
+  color: white !important;
+}
+
+.full-title-tooltip {
+  max-width: 34rem !important;
+  white-space: normal !important;
+  line-height: 1.35 !important;
+  overflow-wrap: anywhere;
+}

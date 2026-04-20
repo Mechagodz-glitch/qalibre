@@ -1,0 +1,39 @@
+{
+  "dashboard": {
+    "activeTabBackground": "radial-gradient(circle at 100% 0%, rgba(148, 191, 255, 0.24), rgba(0, 0, 0, 0) 104px), linear-gradient(rgba(38, 78, 148, 0.97), rgba(52, 106, 186, 0.94))",
+    "createButtonBackground": "linear-gradient(rgba(44, 92, 173, 0.98), rgba(28, 70, 138, 0.96))",
+    "activityChildren": [
+      "activity-row__topline",
+      "activity-row__meta",
+      "activity-row__bar"
+    ]
+  },
+  "runPage": {
+    "footerCompleteButtonText": "Complete Run",
+    "footerCompleteButtonDisabled": false
+  },
+  "generator": {
+    "bottomGridAlignItems": "start",
+    "infrastructureColumns": "577.297px"
+  },
+  "reportScreen": {
+    "infoTileCount": 4,
+    "printHeaders": [
+      "Suite",
+      "Case ID",
+      "Title",
+      "Feature",
+      "Scenario",
+      "Test Type",
+      "Status",
+      "Comment",
+      "Defect Link",
+      "Executed By",
+      "Executed At"
+    ]
+  },
+  "reportPrint": {
+    "tableCardBreakBefore": "page",
+    "printStatusText": "passed"
+  }
+}

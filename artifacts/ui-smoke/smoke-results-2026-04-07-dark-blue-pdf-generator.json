@@ -1,0 +1,20 @@
+{
+  "manualExecution": {
+    "activeTabBackground": "radial-gradient(circle at 100% 0%, rgba(82, 132, 210, 0.22), rgba(0, 0, 0, 0) 112px), linear-gradient(135deg, rgba(12, 32, 74, 0.96), rgba(24, 86, 117, 0.9))",
+    "createButtonBackground": "linear-gradient(135deg, rgba(12, 32, 74, 0.97), rgba(24, 86, 117, 0.92))",
+    "reportCardCount": 1
+  },
+  "pdf": {
+    "pages": 2,
+    "hasSummaryHeading": true,
+    "hasShellText": false,
+    "hasDetailedColumns": false,
+    "textPreview": "\n\nTest Execution Summary\nRUN CONTEXT\nExecution details\nPROJECT\nPBF\nRUN STATUS\ncompleted\nCREATED\nApr 7, 2026, 9:19\nPM\nCOMPLETED\nApr 7, 2026, 9:23\nPM\nEXECUTION OVERVIEW\n100%\nCOMPLETE\nPassed7 cases\nFailed2 cases\nSkipped1 cases\nUntested0 cases\n1 suites | 10 cases\n7\nPASSED\n2\nFAILED\n1\nSKIPPED\n0\nUNTESTED\nSUITES\nPBF - Events - Events\n\nDetailed Results\nExecuted testcase outcomes\nSuiteCase IDTitleFeatureScenarioTest TypeStatusCommentDefect LinkExecuted\nBy\nExecuted At\nPBF - Events -\nEvents\nUPLOAD-00\n1\nVerify uploaded event workflow 1\nkeeps the event entry and\nvalidation flow aligned for long\ndescriptive coverage text wrapping\ncorrectly in the report PDF.\nEventsUploaded\ntestcase 1\nFunctionalPassedExecuted as\nexpected.\n-local-adminApr 7, 2026,\n9:23 PM\nPBF - Events -\nEvents\nUPLOAD-00\n2\nVerify uploaded event workflow 2\nkeeps the event entry and\nvalidation flow aligned for long\ndescriptive coverage text wrapping\ncorrectly in the report PDF.\nEventsUploaded\ntestcase 2\nFunctionalFailedMismatch found\nin validation\nbanner copy and\nstep sequencing.\nBUG-301local-adminApr 7, 2026,\n9:23 PM\nPBF - Events -\nEvents\nUPLOAD-00\n3\nVerify uploaded event workflow 3\nkeeps the event entry and\nvalidation flow aligned f"
+  },
+  "generator": {
+    "coverageGridColumns": "177.141px 177.141px 177.156px 177.141px 177.156px 177.141px 177.156px",
+    "coverageDescriptions": 0,
+    "bottomGridColumns": "1310.22px",
+    "infrastructureColumns": "638.031px 638.047px"
+  }
+}

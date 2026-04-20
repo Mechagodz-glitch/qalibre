@@ -1,0 +1,2 @@
+[proxy] WSL IP resolved to 172.21.161.46
+[proxy] Listening on http://127.0.0.1:4200 -> frontend 172.21.161.46:4200, backend 172.21.161.46:3000

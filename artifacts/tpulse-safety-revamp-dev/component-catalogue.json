@@ -1,0 +1,639 @@
+[
+  {
+    "componentId": "cmp_login_form_001",
+    "componentName": "Login Form",
+    "category": "workflow",
+    "description": "Authentication card with username, password, forgot-password link, primary sign-in, and secondary SSO entry.",
+    "whereFound": [
+      {
+        "module": "Authentication",
+        "page": "Sign In",
+        "routeOrLocationHint": "/auth/sign-in main card"
+      }
+    ],
+    "variants": ["standard login", "single sign-on entry", "disabled submit"],
+    "visibleStates": ["default", "submit disabled", "submittable"],
+    "visibleValidationsOrConstraints": ["Sign In stayed disabled until both required fields were populated."],
+    "commonActions": ["enter credentials", "submit", "open forgot password", "open SSO flow"],
+    "dependencies": ["authentication service", "credential validation", "post-login routing"],
+    "risks": ["submit enablement can drift from real validation", "SSO and standard auth paths can diverge"],
+    "applicableTestTypes": ["smoke", "functional", "regression", "accessibility"],
+    "smokeScenarios": ["Form renders with both fields.", "Valid login reaches the shell."],
+    "functionalScenarios": ["Primary sign-in uses the entered values.", "SSO entry remains reachable."],
+    "negativeScenarios": ["Incomplete input should not submit.", "Invalid credentials should not silently navigate."],
+    "edgeScenarios": ["Long email values remain readable.", "Browser autofill does not break button state."],
+    "accessibilityObservations": ["Visible labels exist.", "Keyboard and error announcement behavior were not fully verified."],
+    "notes": "Observed before login."
+  },
+  {
+    "componentId": "cmp_sidebar_nav_001",
+    "componentName": "Sidebar Navigation Rail",
+    "category": "navigation",
+    "description": "Persistent icon-and-label left rail for the major Safety Assistant modules.",
+    "whereFound": [
+      {
+        "module": "Shared Shell",
+        "page": "All post-login pages",
+        "routeOrLocationHint": "Left navigation rail"
+      }
+    ],
+    "variants": ["active item", "inactive item", "notification item with unread badge"],
+    "visibleStates": ["default", "active", "badge present"],
+    "visibleValidationsOrConstraints": ["None visible."],
+    "commonActions": ["navigate between modules", "identify active section", "open notifications"],
+    "dependencies": ["client-side routing", "unread count state"],
+    "risks": ["active styling can drift from the route", "unread badges can become stale"],
+    "applicableTestTypes": ["smoke", "functional", "regression", "accessibility"],
+    "smokeScenarios": ["Major routes are visible after login.", "Clicking a rail item navigates."],
+    "functionalScenarios": ["Active highlighting follows the current route.", "Notification badge renders when unread items exist."],
+    "negativeScenarios": ["Broken links should not leave the shell unusable.", "Badge text should not overflow badly."],
+    "edgeScenarios": ["Long labels remain readable.", "Reloading on a deep route preserves shell state."],
+    "accessibilityObservations": ["Visible text labels accompany icons.", "Keyboard order across the full rail was not fully checked."],
+    "notes": "Observed links: Home, Analytics, Timeline, Observations, Reports, Notification, Help."
+  },
+  {
+    "componentId": "cmp_user_menu_001",
+    "componentName": "User Avatar Menu",
+    "category": "navigation",
+    "description": "Top-right avatar trigger that opens account actions such as Change Password and Logout.",
+    "whereFound": [
+      {
+        "module": "Shared Shell",
+        "page": "All post-login pages",
+        "routeOrLocationHint": "Top-right avatar circle"
+      }
+    ],
+    "variants": ["closed", "menu open"],
+    "visibleStates": ["default", "open"],
+    "visibleValidationsOrConstraints": ["None visible."],
+    "commonActions": ["open menu", "open change password", "open logout"],
+    "dependencies": ["session state", "overlay positioning"],
+    "risks": ["small hit area can be easy to miss", "overlay dismissal can feel fragile on rerender"],
+    "applicableTestTypes": ["smoke", "functional", "regression", "accessibility"],
+    "smokeScenarios": ["Avatar opens the menu.", "Expected menu items are visible."],
+    "functionalScenarios": ["Change Password remains reachable.", "Logout action is exposed."],
+    "negativeScenarios": ["Menu should not stack duplicate overlays.", "Outside click should dismiss cleanly."],
+    "edgeScenarios": ["Long usernames should not break layout.", "Repeated open-close cycles remain stable."],
+    "accessibilityObservations": ["Menu text is visible once opened.", "Trigger semantics were not fully verified."],
+    "notes": "Menu displayed the current username plus Change Password and Logout."
+  }
+,
+  {
+    "componentId": "cmp_shared_filter_bar_001",
+    "componentName": "Shared Filter Bar",
+    "category": "selection",
+    "description": "Recurring top-of-page filter cluster with unit multiselect, date-range picker, and view-specific quick actions.",
+    "whereFound": [
+      {
+        "module": "Dashboard",
+        "page": "Dashboard",
+        "routeOrLocationHint": "Header filter row"
+      },
+      {
+        "module": "Analytics",
+        "page": "Analytics",
+        "routeOrLocationHint": "Header filter row"
+      },
+      {
+        "module": "Timeline",
+        "page": "Observation Review",
+        "routeOrLocationHint": "Header filter row"
+      },
+      {
+        "module": "Observations / Actions",
+        "page": "Observations and Actions",
+        "routeOrLocationHint": "Toolbar filter row"
+      }
+    ],
+    "variants": ["unit multiselect open", "date picker open", "view-specific button present"],
+    "visibleStates": ["default", "overlay open", "selected values visible"],
+    "visibleValidationsOrConstraints": ["Unit picker exposed Select All plus checkbox options.", "Date picker exposed month navigation and a visible selected range."],
+    "commonActions": ["change units", "change date range", "close overlay", "refresh scoped data"],
+    "dependencies": ["query state", "session persistence", "downstream data reload"],
+    "risks": ["displayed filters can drift from real query state", "overlay placement can clash with other floating UI"],
+    "applicableTestTypes": ["smoke", "functional", "integration", "regression", "accessibility"],
+    "smokeScenarios": ["Units and dates are visible.", "Each control opens correctly."],
+    "functionalScenarios": ["Changing filters updates surrounding data.", "Selections persist while moving between major pages."],
+    "negativeScenarios": ["Invalid or partial range changes should not break the page.", "Closing overlays should not apply unintended values."],
+    "edgeScenarios": ["Large unit sets remain usable.", "Cross-month and cross-year ranges render cleanly."],
+    "accessibilityObservations": ["The controls expose visible text and checkboxes.", "Keyboard multiselect and date navigation were not fully validated."],
+    "notes": "Analytics console logs suggested selected units and date range are reused."
+  },
+  {
+    "componentId": "cmp_filter_dialog_001",
+    "componentName": "Filter Dialog",
+    "category": "workflow",
+    "description": "Modal filter surface with zone, category, subcategory, and risk selectors plus Apply, Cancel, and Reset actions.",
+    "whereFound": [
+      {
+        "module": "Timeline",
+        "page": "Observation Review",
+        "routeOrLocationHint": "Filters button in header"
+      },
+      {
+        "module": "Observations / Actions",
+        "page": "Observations and Actions",
+        "routeOrLocationHint": "Filters or Filter button in toolbar"
+      }
+    ],
+    "variants": ["timeline dialog", "observations dialog"],
+    "visibleStates": ["closed", "open", "apply disabled", "reset disabled"],
+    "visibleValidationsOrConstraints": ["Apply stayed disabled until criteria changed."],
+    "commonActions": ["open dialog", "choose filter values", "apply", "cancel", "reset"],
+    "dependencies": ["dropdown data", "filtered result reload"],
+    "risks": ["dependent fields may not clear consistently", "dirty-state detection may not match enablement"],
+    "applicableTestTypes": ["smoke", "functional", "integration", "regression", "accessibility"],
+    "smokeScenarios": ["Dialog opens from the toolbar.", "Expected fields are visible."],
+    "functionalScenarios": ["Applying filters narrows the result set.", "Cancel closes without mutating the current view."],
+    "negativeScenarios": ["Apply should stay blocked for unchanged selections.", "Reset should not leave stale chips or counts behind."],
+    "edgeScenarios": ["Large option sets remain usable.", "No-result filters degrade gracefully."],
+    "accessibilityObservations": ["Dialog structure is visible and grouped.", "Autofocus behavior needs follow-up."],
+    "notes": "Only read-only open and close paths were exercised."
+  },
+  {
+    "componentId": "cmp_metric_card_001",
+    "componentName": "Metric Card",
+    "category": "data_display",
+    "description": "Summary card showing counts, labels, icons, and sometimes trend deltas or open/closed splits.",
+    "whereFound": [
+      {
+        "module": "Dashboard",
+        "page": "Dashboard",
+        "routeOrLocationHint": "Top summary row"
+      },
+      {
+        "module": "Analytics",
+        "page": "Analytics",
+        "routeOrLocationHint": "Overview and critical summary cards"
+      },
+      {
+        "module": "Notifications",
+        "page": "Safety Notifications",
+        "routeOrLocationHint": "Header summary cards"
+      }
+    ],
+    "variants": ["count only", "count with delta", "count with split labels"],
+    "visibleStates": ["default", "clickable"],
+    "visibleValidationsOrConstraints": ["None visible."],
+    "commonActions": ["read counts", "use the card as a drill-in trigger where supported"],
+    "dependencies": ["aggregated backend data", "current date and unit filters"],
+    "risks": ["headline totals can drift from detailed lists", "color-only cues can become ambiguous"],
+    "applicableTestTypes": ["smoke", "functional", "integration", "regression", "accessibility"],
+    "smokeScenarios": ["Cards render with numbers and labels.", "Counts refresh with shared filters."],
+    "functionalScenarios": ["Clickable cards open the intended context.", "Trend deltas stay aligned with the current period."],
+    "negativeScenarios": ["Zero-state counts should still render legibly.", "Missing data should not collapse layout."],
+    "edgeScenarios": ["Very large numbers remain readable.", "Negative and positive deltas do not overflow."],
+    "accessibilityObservations": ["Text labels are visible.", "Color dependency needs review."],
+    "notes": "Consolidates dashboard KPIs, analytics summary cards, and notification count cards."
+  }
+,
+  {
+    "componentId": "cmp_category_tile_grid_001",
+    "componentName": "Category Summary Tile Grid",
+    "category": "data_display",
+    "description": "Icon-backed category tiles showing category names, counts, and quick drill-in affordances.",
+    "whereFound": [
+      {
+        "module": "Dashboard",
+        "page": "Dashboard",
+        "routeOrLocationHint": "Life Saving Rule Category section"
+      }
+    ],
+    "variants": ["high-volume tile", "low-volume tile"],
+    "visibleStates": ["default", "clickable"],
+    "visibleValidationsOrConstraints": ["None visible."],
+    "commonActions": ["scan category counts", "open category detail or filtered view"],
+    "dependencies": ["category counts", "icon assets", "category-linked navigation"],
+    "risks": ["duplicate category labels can confuse users", "long category names may wrap unpredictably"],
+    "applicableTestTypes": ["smoke", "functional", "regression", "accessibility"],
+    "smokeScenarios": ["Tiles render with icon, label, and count.", "Clicking a tile uses its drill-in affordance."],
+    "functionalScenarios": ["Tile counts align with the active scope.", "Category label and icon remain matched."],
+    "negativeScenarios": ["Missing icons should not break the tile.", "Zero-count categories should not appear active without reason."],
+    "edgeScenarios": ["Long names remain readable.", "Large counts do not distort alignment."],
+    "accessibilityObservations": ["Text labels are visible.", "Icon meaning alone would not be sufficient without text."],
+    "notes": "The sample dashboard showed repeated labels for some categories."
+  },
+  {
+    "componentId": "cmp_visual_panel_001",
+    "componentName": "Visualization Panel",
+    "category": "visualization",
+    "description": "Chart container with a title, optional controls, explanatory text, and a chart or heat-map region.",
+    "whereFound": [
+      {
+        "module": "Dashboard",
+        "page": "Dashboard",
+        "routeOrLocationHint": "Category Trend panel"
+      },
+      {
+        "module": "Analytics",
+        "page": "Analytics",
+        "routeOrLocationHint": "Risk Trend Analysis, Critical Observations by Hour, Observation Trend, Heat Map"
+      }
+    ],
+    "variants": ["trend chart", "hourly chart", "heat map", "category comparison view"],
+    "visibleStates": ["default", "control-driven variant switched"],
+    "visibleValidationsOrConstraints": ["Observed embedded comboboxes, toggles, and icon buttons."],
+    "commonActions": ["switch chart mode", "toggle filters", "read summary narrative"],
+    "dependencies": ["chart library", "aggregated data", "shared filters"],
+    "risks": ["narrative text can contradict the chart data", "script or worker failures can block rendering"],
+    "applicableTestTypes": ["smoke", "functional", "integration", "regression", "accessibility"],
+    "smokeScenarios": ["Panel renders with title and data region.", "Changing panel controls updates the visualization."],
+    "functionalScenarios": ["Selected mode matches the visible data set.", "Summary text aligns with the visual."],
+    "negativeScenarios": ["No-data responses should degrade gracefully.", "Rendering failures should not break the rest of the page."],
+    "edgeScenarios": ["Large time series remain readable.", "Dense labels do not overlap beyond usability."],
+    "accessibilityObservations": ["Titles and summaries are visible.", "Non-text chart interpretation was not verified."],
+    "notes": "Reports also surfaced worker and script issues, but the clearest visualizations were on Dashboard and Analytics."
+  },
+  {
+    "componentId": "cmp_treegrid_001",
+    "componentName": "Expandable Treegrid Table",
+    "category": "data_display",
+    "description": "Hierarchical grid with expandable rows, numeric metrics, and inline row-level actions.",
+    "whereFound": [
+      {
+        "module": "Analytics",
+        "page": "Analytics",
+        "routeOrLocationHint": "Unit Wise Observations section"
+      }
+    ],
+    "variants": ["collapsed row", "expanded row"],
+    "visibleStates": ["default", "expanded", "toggle available"],
+    "visibleValidationsOrConstraints": ["Observed headers: Location, Observation, Critical Observation, Most Critical Time Period."],
+    "commonActions": ["expand row", "read cell metrics", "use inline cell action"],
+    "dependencies": ["hierarchical unit data", "row expansion state"],
+    "risks": ["expanded state can reset after refresh", "dense metrics can become hard to scan"],
+    "applicableTestTypes": ["smoke", "functional", "integration", "regression", "accessibility"],
+    "smokeScenarios": ["Grid headers and rows render.", "Expandable rows expose nested information."],
+    "functionalScenarios": ["Row toggle changes state without losing context.", "Inline actions remain aligned to the correct row."],
+    "negativeScenarios": ["Empty child data should not break expansion.", "Long cell values should not misalign columns."],
+    "edgeScenarios": ["Many rows remain scrollable.", "Mixed positive and negative deltas render consistently."],
+    "accessibilityObservations": ["Treegrid semantics were exposed in the snapshot.", "Keyboard row expansion was not confirmed."],
+    "notes": "One of the clearest structured data components in the portal."
+  }
+,
+  {
+    "componentId": "cmp_record_carousel_001",
+    "componentName": "Record Carousel",
+    "category": "data_display",
+    "description": "Paged horizontal list of recent records with thumbnails, status markers, timestamps, and previous/next controls.",
+    "whereFound": [
+      {
+        "module": "Dashboard",
+        "page": "Dashboard",
+        "routeOrLocationHint": "Recent SIF & Observations panel"
+      }
+    ],
+    "variants": ["thumbnail card", "text-only fallback card", "previous disabled", "next enabled"],
+    "visibleStates": ["default", "paged", "boundary disabled"],
+    "visibleValidationsOrConstraints": ["Current page index was shown as n / 10."],
+    "commonActions": ["move to next/previous page", "open a listed record"],
+    "dependencies": ["paged result set", "thumbnail availability"],
+    "risks": ["carousel index can drift after data updates", "mixed thumbnail and fallback layouts can misalign cards"],
+    "applicableTestTypes": ["smoke", "functional", "regression", "accessibility"],
+    "smokeScenarios": ["Carousel renders with navigation controls.", "At least one card opens when clicked."],
+    "functionalScenarios": ["Next/previous controls update the visible page counter.", "Cards preserve status and timestamp metadata."],
+    "negativeScenarios": ["Disabled arrows should not navigate.", "Missing images should not collapse content."],
+    "edgeScenarios": ["Long observation text wraps cleanly.", "Single-page result sets keep sane controls."],
+    "accessibilityObservations": ["Navigation buttons are visible.", "Carousel keyboard behavior was not verified."],
+    "notes": "The page counter changed during inspection, which suggests dynamic paging."
+  },
+  {
+    "componentId": "cmp_assistant_drawer_001",
+    "componentName": "Assistant Drawer",
+    "category": "utility",
+    "description": "Right-side AI assistant panel with chat history, insight prompts, suggested questions, and a conversation input.",
+    "whereFound": [
+      {
+        "module": "Dashboard",
+        "page": "Dashboard",
+        "routeOrLocationHint": "EOS Insights panel on the right"
+      }
+    ],
+    "variants": ["history empty", "insights visible", "conversation ready"],
+    "visibleStates": ["default", "history empty", "input idle"],
+    "visibleValidationsOrConstraints": ["Send button stayed disabled until text was entered."],
+    "commonActions": ["read insight cards", "use suggested questions", "start a conversation", "view chat history"],
+    "dependencies": ["assistant backend", "chat history state", "insight generation data"],
+    "risks": ["assistant content can become stale relative to active filters", "conversation controls can be confusing when history is empty"],
+    "applicableTestTypes": ["smoke", "functional", "integration", "regression", "accessibility"],
+    "smokeScenarios": ["Drawer renders with heading, history area, and input.", "Suggested questions are visible."],
+    "functionalScenarios": ["Ask EOS flows use the selected insight context.", "History updates after a successful conversation."],
+    "negativeScenarios": ["Empty input should not submit.", "Backend failures should not leave the drawer unusable."],
+    "edgeScenarios": ["Long summaries do not overflow cards.", "Many history items remain navigable."],
+    "accessibilityObservations": ["Visible headings and button labels exist.", "Complex drawer semantics were not fully tested."],
+    "notes": "No prior chats were present during the inspection."
+  },
+  {
+    "componentId": "cmp_timeline_explorer_001",
+    "componentName": "Timeline Explorer",
+    "category": "workflow",
+    "description": "Two-pane review workspace combining a date-grouped observation list with a selected-day hourly exploration area.",
+    "whereFound": [
+      {
+        "module": "Timeline",
+        "page": "Observation Review",
+        "routeOrLocationHint": "/safety-and-surveillance/review main layout"
+      }
+    ],
+    "variants": ["date list", "selected day detail", "time-filtered detail"],
+    "visibleStates": ["default", "sorted by newest first", "single-day detail active"],
+    "visibleValidationsOrConstraints": ["Sort order text was visible.", "Reset Timeline was disabled in the observed state."],
+    "commonActions": ["select a day", "change sort order", "use time filter", "toggle category chips", "reset timeline"],
+    "dependencies": ["current filters", "selected day state", "observation media data"],
+    "risks": ["selected day and detail content can drift apart", "time filtering can create confusing empty states"],
+    "applicableTestTypes": ["smoke", "functional", "integration", "regression", "accessibility"],
+    "smokeScenarios": ["Timeline page renders both panes.", "Selecting a day updates the right-side detail context."],
+    "functionalScenarios": ["Sort order changes the visible day sequence.", "Time filter affects the visible observation subset."],
+    "negativeScenarios": ["Empty selected-day results should show a clear state.", "Reset should not drop unrelated filters silently."],
+    "edgeScenarios": ["Large date ranges remain scrollable.", "Dense observation days still surface counts and category icons clearly."],
+    "accessibilityObservations": ["Visible headings, counters, and filter triggers exist.", "Two-pane keyboard navigation was not fully tested."],
+    "notes": "This entry covers the high-level review pattern rather than the media viewer inside it."
+  }
+,
+  {
+    "componentId": "cmp_record_detail_panel_001",
+    "componentName": "Record Detail Panel",
+    "category": "container",
+    "description": "Selected-record detail area with media, status, tabs, comments, helper text, and grouped metadata sections.",
+    "whereFound": [
+      {
+        "module": "Timeline",
+        "page": "Observation Review",
+        "routeOrLocationHint": "Selected observation detail area"
+      },
+      {
+        "module": "Observations",
+        "page": "Observation detail pane",
+        "routeOrLocationHint": "Right detail pane for the selected observation"
+      },
+      {
+        "module": "Actions",
+        "page": "Action detail pane",
+        "routeOrLocationHint": "Right detail pane for the selected action"
+      }
+    ],
+    "variants": ["observation detail", "action detail", "media-heavy detail", "form-heavy detail"],
+    "visibleStates": ["default", "record selected", "fields disabled", "comments empty state"],
+    "visibleValidationsOrConstraints": ["Comment area showed a 1000-char counter.", "Comment attachments said max 5MB each.", "Action evidence said images and PDFs allowed, max 10MB each."],
+    "commonActions": ["inspect metadata", "review status", "switch tabs", "open comments/history", "attach files where allowed"],
+    "dependencies": ["selected record", "permissions", "record status", "media/assets", "comment and upload flows"],
+    "risks": ["editable and read-only controls are mixed closely together", "broken media or upload flows can destabilize the panel"],
+    "applicableTestTypes": ["smoke", "functional", "integration", "regression", "accessibility"],
+    "smokeScenarios": ["Selecting a record updates the detail area.", "Expected sections render for the chosen record type."],
+    "functionalScenarios": ["Detail metadata matches the selected card.", "Tab and comment areas stay scoped to the active record."],
+    "negativeScenarios": ["Missing record data should not leave unlabeled gaps.", "Disabled controls should not accept edits."],
+    "edgeScenarios": ["Long descriptions remain scrollable.", "Large linked-content sections do not collapse surrounding controls."],
+    "accessibilityObservations": ["Section headings are visible.", "Nested interactive controls need deeper keyboard review."],
+    "notes": "No create, update, upload, or comment submission was executed."
+  },
+  {
+    "componentId": "cmp_action_toolbar_001",
+    "componentName": "Action Toolbar",
+    "category": "workflow",
+    "description": "Top-of-list toolbar with bulk actions, export, create entry points, quick toggles, counts, and sort controls.",
+    "whereFound": [
+      {
+        "module": "Observations",
+        "page": "Observations",
+        "routeOrLocationHint": "Toolbar above observation list"
+      },
+      {
+        "module": "Actions",
+        "page": "Actions",
+        "routeOrLocationHint": "Toolbar above action list"
+      },
+      {
+        "module": "Reports",
+        "page": "Reports",
+        "routeOrLocationHint": "Filter bar and Custom Report entry"
+      }
+    ],
+    "variants": ["bulk disabled", "export available", "create available", "view toggle present"],
+    "visibleStates": ["default", "controls disabled", "sort active"],
+    "visibleValidationsOrConstraints": ["Bulk Update and Drafts were disabled in the observed state.", "Sort hint text was visible."],
+    "commonActions": ["open filters", "toggle view", "export", "create new item", "change sort order"],
+    "dependencies": ["selection state", "permissions", "export/create flows", "current filters"],
+    "risks": ["enabled state can become inconsistent when selections change", "mutating actions sit close to read-only inspection controls"],
+    "applicableTestTypes": ["smoke", "functional", "integration", "regression", "accessibility"],
+    "smokeScenarios": ["Toolbar renders the expected actions.", "Sort and filter controls remain accessible."],
+    "functionalScenarios": ["Bulk actions enable only with valid selections.", "View toggles switch the content beneath the toolbar."],
+    "negativeScenarios": ["Disabled actions should not execute.", "Unauthorized actions should not expose editable states."],
+    "edgeScenarios": ["Long labels do not wrap badly.", "Large result sets keep the toolbar responsive."],
+    "accessibilityObservations": ["Mixed text and icon controls are visible.", "Several icon-only controls need explicit label review."],
+    "notes": "Create Action, Add Observation, Mark All Read, Clear All, and export were intentionally not executed."
+  },
+  {
+    "componentId": "cmp_record_list_001",
+    "componentName": "Selectable Record List",
+    "category": "data_display",
+    "description": "Scrollable master list of cards or rows representing observations, actions, or reports with summary metadata.",
+    "whereFound": [
+      {
+        "module": "Observations",
+        "page": "Observations",
+        "routeOrLocationHint": "Main list area"
+      },
+      {
+        "module": "Actions",
+        "page": "Actions",
+        "routeOrLocationHint": "Main list area"
+      },
+      {
+        "module": "Reports",
+        "page": "Reports",
+        "routeOrLocationHint": "Reports list"
+      }
+    ],
+    "variants": ["checkbox-selectable card", "plain clickable card", "thumbnail card", "document list card"],
+    "visibleStates": ["default", "selected", "disabled checkbox", "status shown"],
+    "visibleValidationsOrConstraints": ["Observation list supported Select all for Bulk Update.", "Some checkboxes were disabled for certain records."],
+    "commonActions": ["open record detail", "select record", "scan metadata", "page through results"],
+    "dependencies": ["paged result data", "selection state", "current filters and sort"],
+    "risks": ["selection state can be lost while paging", "disabled selectability can be unclear without explanation"],
+    "applicableTestTypes": ["smoke", "functional", "integration", "regression", "accessibility"],
+    "smokeScenarios": ["Records render with title and metadata.", "Clicking a record opens detail context."],
+    "functionalScenarios": ["Checkbox selection updates bulk-action state.", "Different list variants preserve their associated metadata."],
+    "negativeScenarios": ["Disabled checkboxes should not toggle.", "Broken thumbnails should not hide text metadata."],
+    "edgeScenarios": ["Very long titles wrap without overlap.", "Large result sets remain scrollable and pageable."],
+    "accessibilityObservations": ["Textual metadata is present on cards.", "Focus behavior for nested interactive regions needs follow-up."],
+    "notes": "Observations, actions, and report cards were merged because the master-detail pattern is strongly reused."
+  }
+,
+  {
+    "componentId": "cmp_pagination_001",
+    "componentName": "Pagination Control",
+    "category": "navigation",
+    "description": "Page navigator with previous/next buttons, numbered pages, ellipsis, and a visible results summary.",
+    "whereFound": [
+      {
+        "module": "Observations",
+        "page": "Observations",
+        "routeOrLocationHint": "Bottom of list"
+      },
+      {
+        "module": "Actions",
+        "page": "Actions",
+        "routeOrLocationHint": "Bottom of list"
+      },
+      {
+        "module": "Reports",
+        "page": "Reports",
+        "routeOrLocationHint": "Bottom of report list"
+      },
+      {
+        "module": "Notifications",
+        "page": "Safety Notifications",
+        "routeOrLocationHint": "Bottom of notification feed"
+      }
+    ],
+    "variants": ["previous disabled", "next enabled", "ellipsis present"],
+    "visibleStates": ["default", "boundary disabled", "active page"],
+    "visibleValidationsOrConstraints": ["Result summary was shown as Result: start - end of total."],
+    "commonActions": ["move to next page", "move to previous page", "jump to numbered page"],
+    "dependencies": ["pagination state", "current filters and sort"],
+    "risks": ["active page can desync from the visible list", "changing filters can leave the pager on an invalid page"],
+    "applicableTestTypes": ["smoke", "functional", "regression", "accessibility"],
+    "smokeScenarios": ["Pagination summary and controls render.", "Next page changes the result slice when enabled."],
+    "functionalScenarios": ["Current page button tracks the displayed records.", "Boundary states disable the correct arrow button."],
+    "negativeScenarios": ["Disabled arrows should not navigate.", "Filter changes should not leave the pager invalid."],
+    "edgeScenarios": ["Single-page result sets remain stable.", "Large page counts with ellipsis stay usable."],
+    "accessibilityObservations": ["Buttons expose readable text or labels in most cases.", "Active-page announcement was not verified."],
+    "notes": "Observed across most list-centric modules."
+  },
+  {
+    "componentId": "cmp_history_drawer_001",
+    "componentName": "History Drawer",
+    "category": "feedback",
+    "description": "Side drawer that shows an audit-style chronological history for the selected action or assistant session area.",
+    "whereFound": [
+      {
+        "module": "Actions",
+        "page": "Actions",
+        "routeOrLocationHint": "History button in action detail pane"
+      },
+      {
+        "module": "Dashboard",
+        "page": "Dashboard",
+        "routeOrLocationHint": "EOS chat history region"
+      }
+    ],
+    "variants": ["action audit drawer", "assistant history panel", "empty history"],
+    "visibleStates": ["closed", "open", "empty history"],
+    "visibleValidationsOrConstraints": ["None visible."],
+    "commonActions": ["open history", "scan chronological entries", "close drawer"],
+    "dependencies": ["activity log data", "selected record context", "overlay state"],
+    "risks": ["history ordering can be confusing if timestamps are inconsistent", "overlay drawers may obscure underlying controls"],
+    "applicableTestTypes": ["smoke", "functional", "regression", "accessibility"],
+    "smokeScenarios": ["Drawer opens from its trigger.", "At least one event item or an empty state is visible."],
+    "functionalScenarios": ["History items are scoped to the selected context.", "Close control dismisses the drawer cleanly."],
+    "negativeScenarios": ["Missing history should show an empty state.", "Repeated open-close actions should not duplicate overlays."],
+    "edgeScenarios": ["Long histories remain scrollable.", "Long event descriptions wrap cleanly."],
+    "accessibilityObservations": ["Drawer title is visible.", "Focus trapping and dismissal shortcuts were not fully validated."],
+    "notes": "The actions drawer showed a clear chronological audit trail."
+  },
+  {
+    "componentId": "cmp_report_modal_001",
+    "componentName": "Report Generation Modal",
+    "category": "workflow",
+    "description": "Custom report dialog with required start/end dates and optional user selection.",
+    "whereFound": [
+      {
+        "module": "Reports",
+        "page": "Reports",
+        "routeOrLocationHint": "Custom Report button"
+      }
+    ],
+    "variants": ["closed", "open with required fields empty"],
+    "visibleStates": ["default", "open", "generate disabled"],
+    "visibleValidationsOrConstraints": ["Start Date and End Date were marked required.", "Generate Report stayed disabled until required inputs were satisfied."],
+    "commonActions": ["open modal", "pick date range", "select users", "cancel", "generate report"],
+    "dependencies": ["report backend", "date pickers", "user lookup data"],
+    "risks": ["date validation can permit invalid ranges", "generate button state may lag after selection"],
+    "applicableTestTypes": ["smoke", "functional", "integration", "regression", "accessibility"],
+    "smokeScenarios": ["Modal opens with expected fields.", "Cancel closes the modal cleanly."],
+    "functionalScenarios": ["Required fields gate Generate Report.", "Selected users are included in the request context."],
+    "negativeScenarios": ["Generate should not proceed with missing dates.", "Closing the modal should not leak partial input unexpectedly."],
+    "edgeScenarios": ["Wide date ranges remain valid if supported.", "Large user lists remain usable."],
+    "accessibilityObservations": ["Required labels are visible.", "Dialog focus trapping was not fully tested."],
+    "notes": "The generation action itself was intentionally not executed."
+  }
+,
+  {
+    "componentId": "cmp_notification_center_001",
+    "componentName": "Notification Center",
+    "category": "feedback",
+    "description": "Dedicated notifications workspace with summary cards, tabbed feeds, filter dropdown, mute switch, and global actions.",
+    "whereFound": [
+      {
+        "module": "Notifications",
+        "page": "Safety Notifications",
+        "routeOrLocationHint": "/safety-and-surveillance/notification"
+      }
+    ],
+    "variants": ["Observation tab", "Action tab"],
+    "visibleStates": ["default", "tab switched", "unread counts present"],
+    "visibleValidationsOrConstraints": ["Observation and Action tabs showed unread counts.", "Mute, Mark All Read, and Clear All controls were visible."],
+    "commonActions": ["switch feed type", "filter the feed", "toggle mute", "mark all read", "clear all"],
+    "dependencies": ["unread counts", "notification feed API", "notification settings"],
+    "risks": ["unread badges can drift from actual feed state", "global actions can be destructive if they lack confirmation"],
+    "applicableTestTypes": ["smoke", "functional", "integration", "regression", "accessibility"],
+    "smokeScenarios": ["Notification center opens with summary counts and tabs.", "Switching tabs changes the feed."],
+    "functionalScenarios": ["Counts align with displayed feed totals.", "Filter dropdown scopes the current feed."],
+    "negativeScenarios": ["Global actions should not execute accidentally.", "Empty-state handling should be clear when a tab has no items."],
+    "edgeScenarios": ["High unread counts remain readable.", "Large feeds stay pageable and performant."],
+    "accessibilityObservations": ["Headings and tab labels are visible.", "Mute switch and icon-only actions need follow-up."],
+    "notes": "Destructive global actions were intentionally not triggered."
+  },
+  {
+    "componentId": "cmp_notification_item_001",
+    "componentName": "Notification Feed Item",
+    "category": "feedback",
+    "description": "Single notification row with message text, time, location metadata, unread state, and item-level icon actions.",
+    "whereFound": [
+      {
+        "module": "Notifications",
+        "page": "Safety Notifications",
+        "routeOrLocationHint": "Observation and Action feed rows"
+      }
+    ],
+    "variants": ["NEW badge shown", "observation notification", "action notification"],
+    "visibleStates": ["default", "unread"],
+    "visibleValidationsOrConstraints": ["Item-level view and clear controls were exposed as icon buttons."],
+    "commonActions": ["read notification", "open referenced record", "clear single notification"],
+    "dependencies": ["notification payload", "record deep-linking", "read/clear state"],
+    "risks": ["relative and absolute timestamps can be inconsistent", "icon-only actions can be ambiguous"],
+    "applicableTestTypes": ["smoke", "functional", "integration", "regression", "accessibility"],
+    "smokeScenarios": ["Feed item shows message, time, and location metadata.", "Unread state is visually distinct."],
+    "functionalScenarios": ["Opening the item reaches the related record context.", "Clearing one item updates the feed correctly."],
+    "negativeScenarios": ["Broken record references should fail gracefully.", "Repeated clear actions should not remove the wrong item."],
+    "edgeScenarios": ["Long notification text wraps cleanly.", "Mixed relative and absolute times remain understandable."],
+    "accessibilityObservations": ["Readable notification text is visible.", "Item-level icon labeling needs review."],
+    "notes": "Per-item actions were not executed."
+  },
+  {
+    "componentId": "cmp_help_reference_001",
+    "componentName": "Help Reference Workspace",
+    "category": "data_display",
+    "description": "Tabbed help area containing categorization cards, category-mapping cards, and a user-manual document slot.",
+    "whereFound": [
+      {
+        "module": "Help",
+        "page": "Help",
+        "routeOrLocationHint": "/safety-and-surveillance/help main content"
+      }
+    ],
+    "variants": ["Categorization tab", "Category Mapping tab", "User Manual tab"],
+    "visibleStates": ["default", "tab selected", "document frame visible"],
+    "visibleValidationsOrConstraints": ["None visible."],
+    "commonActions": ["switch tabs", "scan category cards", "scan mapping cards", "open the user manual pane"],
+    "dependencies": ["reference content assets", "tab state", "PDF asset loading"],
+    "risks": ["broken assets can make one tab appear blank", "route/asset errors can leave the manual frame empty"],
+    "applicableTestTypes": ["smoke", "functional", "regression", "compatibility", "accessibility"],
+    "smokeScenarios": ["All help tabs render.", "Selecting each tab swaps the content."],
+    "functionalScenarios": ["Category/mapping content stays aligned with the selected tab.", "The User Manual tab attempts to load its document."],
+    "negativeScenarios": ["Missing reference assets should fail gracefully.", "Rapid tab switching should not leave stale content behind."],
+    "edgeScenarios": ["Long category lists remain readable.", "Mixed media/document content does not break layout."],
+    "accessibilityObservations": ["Tab semantics were exposed in the snapshot.", "The iframe did not expose a visible title."],
+    "notes": "Console logs indicated a route/asset error for the user-manual PDF, so inline document behavior is partially uncertain."
+  }
+]

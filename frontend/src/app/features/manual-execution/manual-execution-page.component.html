@@ -1,0 +1,612 @@
+<section class="manual-execution-page">
+  @if (loading()) {
+    <section class="centered-state">
+      <mat-spinner diameter="42"></mat-spinner>
+    </section>
+  } @else {
+    <section class="metric-grid">
+      <mat-card class="metric-card metric-card--sky">
+        <mat-card-content>
+          <span>Approved Suites</span>
+          <strong>{{ projectMetrics().approvedSuites }}</strong>
+          <p>Ready to be pulled into this run</p>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="metric-card metric-card--mint">
+        <mat-card-content>
+          <span>Ready Cases</span>
+          <strong>{{ projectMetrics().readyCases }}</strong>
+          <p>Approved cases available for execution</p>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="metric-card metric-card--slate">
+        <mat-card-content>
+          <span>Selected Suites</span>
+          <strong>{{ projectMetrics().selectedSuites }}</strong>
+          <p>Sources currently included in this run</p>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="metric-card metric-card--warm">
+        <mat-card-content>
+          <span>Selected Cases</span>
+          <strong>{{ projectMetrics().selectedCases }}</strong>
+          <p>Exact testcase rows queued for execution</p>
+        </mat-card-content>
+      </mat-card>
+    </section>
+
+    <section class="filter-strip" [formGroup]="form">
+      <article class="scope-field">
+        <div class="scope-field__meta" aria-hidden="true"></div>
+        <mat-form-field appearance="outline">
+          <mat-label>Client</mat-label>
+          <mat-select formControlName="projectId">
+            @for (project of projects(); track project.id) {
+              <mat-option [value]="project.id">{{ project.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </article>
+
+      <article class="scope-field">
+        <div class="scope-field__meta" aria-hidden="true"></div>
+        <mat-form-field appearance="outline">
+          <mat-label>Module</mat-label>
+          <mat-select formControlName="moduleId">
+            <mat-option value="">All modules</mat-option>
+            @for (moduleItem of modules(); track moduleItem.id) {
+              <mat-option [value]="moduleItem.id">{{ moduleItem.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </article>
+
+      <article class="scope-field">
+        <div class="scope-field__meta scope-field__meta--toggle">
+          <mat-button-toggle-group
+            class="mode-toggle"
+            [value]="pageInputMode()"
+            (change)="setPageInputMode($event.value)"
+          >
+            <mat-button-toggle value="existing">Existing</mat-button-toggle>
+            <mat-button-toggle value="new">New</mat-button-toggle>
+          </mat-button-toggle-group>
+        </div>
+
+        @if (pageInputMode() === 'existing') {
+          <mat-form-field appearance="outline">
+            <mat-label>Page</mat-label>
+            <mat-select formControlName="pageId">
+              <mat-option value="">All pages</mat-option>
+              @for (page of pages(); track page.id) {
+                <mat-option [value]="page.id">{{ page.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        } @else {
+          <mat-form-field appearance="outline">
+            <mat-label>New page</mat-label>
+            <input matInput formControlName="pageName" placeholder="Type a page name" />
+          </mat-form-field>
+        }
+      </article>
+
+      <article class="scope-field">
+        <div class="scope-field__meta scope-field__meta--toggle">
+          <mat-button-toggle-group
+            class="mode-toggle"
+            [value]="featureInputMode()"
+            (change)="setFeatureInputMode($event.value)"
+          >
+            <mat-button-toggle value="existing">Existing</mat-button-toggle>
+            <mat-button-toggle value="new">New</mat-button-toggle>
+          </mat-button-toggle-group>
+        </div>
+
+        @if (featureInputMode() === 'existing') {
+          <mat-form-field appearance="outline">
+            <mat-label>Feature</mat-label>
+            <mat-select formControlName="featureId" [disabled]="!form.controls.pageId.value || pageInputMode() !== 'existing'">
+              <mat-option value="">All features</mat-option>
+              @for (feature of availableFeatures(); track feature.id) {
+                <mat-option [value]="feature.id">{{ feature.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        } @else {
+          <mat-form-field appearance="outline">
+            <mat-label>New feature</mat-label>
+            <input matInput formControlName="featureName" placeholder="Type a feature name" />
+          </mat-form-field>
+        }
+      </article>
+
+      <article class="scope-field scope-field--search">
+        <div class="scope-field__meta" aria-hidden="true"></div>
+        <label class="toolbar-search execution-search" aria-label="Search execution sources">
+          <span class="field-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M10.5 4a6.5 6.5 0 1 0 4.03 11.6l4.43 4.43 1.41-1.41-4.43-4.43A6.5 6.5 0 0 0 10.5 4Zm0 2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Z"
+              />
+            </svg>
+          </span>
+          <input
+            [value]="suiteSearch()"
+            (input)="suiteSearch.set($any($event.target).value)"
+            placeholder="Search execution sources"
+            aria-label="Search execution sources"
+          />
+        </label>
+      </article>
+    </section>
+
+    <section class="workspace-grid">
+      <mat-card class="planner-card planner-card--sky">
+        <mat-card-content class="planner-card__content">
+          <section class="builder-hero">
+            <div>
+              <p class="section-eyebrow">Run builder</p>
+              <h2>Create a manual execution run</h2>
+              <p>
+                Lock the scope first, choose the exact testcase rows you want, and
+                keep the run small enough to execute decisively.
+              </p>
+            </div>
+            <div class="selection-pill">
+              {{ selectedSuiteCount() }} suites / {{ selectedCaseCount() }} cases
+            </div>
+          </section>
+
+          <form class="planner-form" [formGroup]="form">
+            <div class="planner-form__grid">
+              <mat-form-field appearance="outline">
+                <mat-label>Test Run Name</mat-label>
+                <input matInput formControlName="name" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Environment</mat-label>
+                <input
+                  matInput
+                  formControlName="environment"
+                  placeholder="QA, UAT, production mirror"
+                />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Build Version</mat-label>
+                <input
+                  matInput
+                  formControlName="buildVersion"
+                  placeholder="v2.4.0-stable"
+                />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Assigned Tester</mat-label>
+                <input
+                  matInput
+                  [value]="currentUser()?.name || form.controls.assignedTester.value || 'Signed-in user'"
+                  readonly
+                />
+              </mat-form-field>
+            </div>
+
+            <mat-form-field appearance="outline" class="notes-field">
+              <mat-label>Run Notes</mat-label>
+              <textarea
+                matInput
+                rows="3"
+                formControlName="notes"
+                placeholder="What environment, scope, or execution notes matter for this run?"
+              ></textarea>
+            </mat-form-field>
+          </form>
+
+          <div class="upload-card">
+            <div class="upload-card__copy">
+              <p class="section-eyebrow">Manual testcase upload</p>
+              <h3>Import CSV or Excel testcase documents</h3>
+                <p>
+                  Bring user-prepared manual testcase sheets directly into execution.
+                  Uploaded testcase documents do not require suite approval, and only
+                  <strong>Test case Description</strong> is mandatory in the template.
+                  Need a fresh page? Keep Client and Module selected from the existing lists, then switch
+                  <strong>Page</strong> above to <strong>New</strong> for uploaded testcase documents.
+                </p>
+            </div>
+          <div class="upload-card__actions">
+            <a
+              mat-stroked-button
+              class="upload-template-button"
+              href="/manual-testcase-upload-template.csv"
+              download="manual-testcase-upload-template.csv"
+            >
+              <span class="upload-card__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.29a1 1 0 1 1 1.4 1.41l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.41L11 12.59V4a1 1 0 0 1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1Z"></path>
+                </svg>
+              </span>
+              Download Template
+            </a>
+            <input
+              #testcaseUpload
+              type="file"
+              hidden
+                accept=".xlsx,.xls,.csv,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                multiple
+                (change)="onTestcaseDocumentSelected($event)"
+              />
+              <button
+                mat-stroked-button
+                class="upload-template-button upload-template-button--upload"
+                type="button"
+                (click)="testcaseUpload.click()"
+                [disabled]="importInProgress()"
+              >
+                <span class="upload-card__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 20a1 1 0 0 1-1-1v-8.59l-2.3 2.29a1 1 0 1 1-1.4-1.41l4-4a1 1 0 0 1 1.4 0l4 4a1 1 0 0 1-1.4 1.41L13 10.41V19a1 1 0 0 1-1 1Z"></path>
+                    <path d="M5 6a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6A1 1 0 0 1 5 6Z"></path>
+                  </svg>
+                </span>
+                {{ importInProgress() ? 'Parsing...' : 'Upload Testcase Doc' }}
+              </button>
+            </div>
+          </div>
+
+          <div class="suite-picker">
+            <div class="suite-picker__header">
+              <div>
+                <p class="section-eyebrow">Execution sources</p>
+                <h3>Choose approved suites or uploaded testcase documents</h3>
+                <p>
+                  Pick only the exact testcases you want in this run. Source-level
+                  selection still supports quick select all.
+                </p>
+              </div>
+              <div class="suite-picker__actions">
+                <button
+                  mat-button
+                  type="button"
+                  (click)="selectAllVisibleSuites()"
+                  [disabled]="!filteredSuites().length && !filteredUploadedSuites().length"
+                >
+                  Select all visible
+                </button>
+                <button
+                  mat-button
+                  type="button"
+                  (click)="clearSuiteSelection()"
+                  [disabled]="!selectedCaseCount()"
+                >
+                  Unselect all
+                </button>
+              </div>
+            </div>
+
+                @if (!filteredUploadedSuites().length && !filteredSuites().length) {
+              <app-empty-state
+                title="No execution sources in this scope"
+                [description]="
+                  allowsApprovedSuiteSelection()
+                    ? 'Approve a suite from Test Suites, change the scope filters, or upload a manual testcase document.'
+                    : 'Upload a manual testcase document, or switch Page and Feature back to Existing to browse approved suites from the selected scope.'
+                "
+              />
+            } @else {
+              <div class="suite-picker__list">
+                @if (filteredUploadedSuites().length) {
+                  <div class="suite-picker__group-label">Uploaded testcase documents</div>
+                  @for (suite of filteredUploadedSuites(); track suite.tempId) {
+                    <article
+                      class="suite-source"
+                      [class.selected]="uploadedSuiteSelected(suite.tempId)"
+                      [class.expanded]="uploadedSuiteExpanded(suite.tempId)"
+                    >
+                      <div class="suite-source__header">
+                        <div class="suite-source__select">
+                          <mat-checkbox
+                            [checked]="uploadedSuiteSelected(suite.tempId)"
+                            [indeterminate]="selectedUploadedCaseCountForSuite(suite.tempId) > 0 && selectedUploadedCaseCountForSuite(suite.tempId) < suite.caseCount"
+                            (change)="toggleUploadedSuiteSelection(suite.tempId, $event.checked)"
+                          ></mat-checkbox>
+                        </div>
+
+                        <div class="suite-source__copy">
+                          <div class="suite-source__topline">
+                            <strong>{{ suite.title }}</strong>
+                            <app-status-badge status="pending" label="uploaded"></app-status-badge>
+                          </div>
+                          <span>{{ suite.sourceFileName }}</span>
+                          <div class="suite-source__meta">
+                            <span>{{ suite.caseCount }} imported cases</span>
+                            <span>{{ suite.summary || 'Ready for direct execution' }}</span>
+                          </div>
+                        </div>
+
+                        <div class="suite-source__aside">
+                          <div class="suite-source__selection-pill">
+                            {{ selectedUploadedCaseCountForSuite(suite.tempId) }} / {{ suite.caseCount }} selected
+                          </div>
+                          <div class="suite-source__actions">
+                            <button
+                              mat-button
+                              type="button"
+                              (click)="toggleUploadedSuiteExpansion(suite.tempId); stopEvent($event)"
+                            >
+                              {{ uploadedSuiteExpanded(suite.tempId) ? 'Hide testcases' : 'Choose testcases' }}
+                            </button>
+                            <button
+                              mat-button
+                              type="button"
+                              class="suite-option__remove"
+                              (click)="removeUploadedSuite(suite.tempId); stopEvent($event)"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="suite-case-picker" [class.open]="uploadedSuiteExpanded(suite.tempId)">
+                        <div class="suite-case-picker__toolbar">
+                          <div>
+                            <strong>Uploaded testcases</strong>
+                            <span>Choose the exact rows to include in this run.</span>
+                          </div>
+                          <div class="suite-case-picker__actions">
+                            <button
+                              mat-button
+                              type="button"
+                              (click)="selectAllCasesForUploadedSuite(suite.tempId); stopEvent($event)"
+                            >
+                              Select all
+                            </button>
+                            <button
+                              mat-button
+                              type="button"
+                              (click)="clearCasesForUploadedSuite(suite.tempId); stopEvent($event)"
+                            >
+                              Clear
+                            </button>
+                          </div>
+                        </div>
+
+                        <div class="suite-case-list">
+                          @for (testCase of suite.cases; track testCase.sourceCaseId) {
+                            <label
+                              class="suite-case-option"
+                              [class.selected]="uploadedCaseSelected(suite.tempId, testCase.sourceCaseId)"
+                            >
+                              <mat-checkbox
+                                [checked]="uploadedCaseSelected(suite.tempId, testCase.sourceCaseId)"
+                                (change)="toggleUploadedCaseSelection(suite.tempId, testCase.sourceCaseId, $event.checked)"
+                              ></mat-checkbox>
+
+                              <div class="suite-case-option__copy">
+                                <strong>{{ testCase.title }}</strong>
+                                <span>{{ testCase.feature }} | {{ testCase.scenario }}</span>
+                                <div class="suite-case-option__meta">
+                                  <span>{{ testCase.testType }}</span>
+                                  <span>{{ testCase.priority }}</span>
+                                  <span>{{ testCase.severity }}</span>
+                                </div>
+                              </div>
+                            </label>
+                          }
+                        </div>
+                      </div>
+                    </article>
+                  }
+                }
+
+                @if (filteredSuites().length) {
+                  <div class="suite-picker__group-label">Approved suites</div>
+                }
+                @for (suite of filteredSuites(); track suite.id) {
+                  <article
+                    class="suite-source"
+                    [class.selected]="suiteSelected(suite.id)"
+                    [class.expanded]="approvedSuiteExpanded(suite.id)"
+                  >
+                    <div class="suite-source__header">
+                      <div class="suite-source__select">
+                        <mat-checkbox
+                          [checked]="suiteSelected(suite.id)"
+                          [indeterminate]="selectedCaseCountForSuite(suite.id) > 0 && selectedCaseCountForSuite(suite.id) < suite.caseCount"
+                          (change)="toggleSuiteSelection(suite.id, $event.checked)"
+                        ></mat-checkbox>
+                      </div>
+
+                      <div class="suite-source__copy">
+                        <div class="suite-source__topline">
+                          <strong>{{ suite.title }}</strong>
+                          <app-status-badge status="approved" label="approved"></app-status-badge>
+                        </div>
+                        <span>{{ suite.suiteContext.path || 'Unassigned suite path' }}</span>
+                        <div class="suite-source__meta">
+                          <span>{{ suite.caseCount }} approved cases</span>
+                          <span>v{{ suite.version }}</span>
+                          <span>Approved {{ formatDate(suite.approvedAt) }}</span>
+                        </div>
+                      </div>
+
+                      <div class="suite-source__aside">
+                        <div class="suite-source__selection-pill">
+                          {{ selectedCaseCountForSuite(suite.id) }} / {{ availableCaseCountForSuite(suite) }} selected
+                        </div>
+                        <div class="suite-source__actions">
+                          <button
+                            mat-stroked-button
+                            class="suite-source__picker-button"
+                            type="button"
+                            (click)="toggleApprovedSuiteExpansion(suite.id); stopEvent($event)"
+                          >
+                            {{ approvedSuiteExpanded(suite.id) ? 'Hide testcases' : 'Choose testcases' }}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="suite-case-picker" [class.open]="approvedSuiteExpanded(suite.id)">
+                      <div class="suite-case-picker__toolbar">
+                        <div>
+                          <strong>Approved testcases</strong>
+                          <span>Use the suite toggle for everything, or refine the exact cases here.</span>
+                        </div>
+                        <div class="suite-case-picker__actions">
+                          <button
+                            mat-button
+                            type="button"
+                            (click)="selectAllCasesForSuite(suite.id); stopEvent($event)"
+                          >
+                            Select all
+                          </button>
+                          <button
+                            mat-button
+                            type="button"
+                            (click)="clearCasesForSuite(suite.id); stopEvent($event)"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </div>
+
+                      @if (suiteCasesLoading(suite.id)) {
+                        <div class="suite-case-state">
+                          <mat-spinner diameter="24"></mat-spinner>
+                          <div>
+                            <strong>Loading approved testcases</strong>
+                            <span>Pulling the approved case list for this suite.</span>
+                          </div>
+                        </div>
+                      } @else if (!suite.cases.length) {
+                        <div class="suite-case-state">
+                          <div>
+                            <strong>No approved testcase rows available</strong>
+                            <span>This suite does not currently expose individual approved cases to manual execution.</span>
+                          </div>
+                        </div>
+                      } @else {
+                        <div class="suite-case-list">
+                          @for (testCase of suite.cases; track testCase.sourceCaseId) {
+                            <label
+                              class="suite-case-option"
+                              [class.selected]="approvedCaseSelected(suite.id, testCase.sourceCaseId)"
+                            >
+                              <mat-checkbox
+                                [checked]="approvedCaseSelected(suite.id, testCase.sourceCaseId)"
+                                (change)="toggleApprovedCaseSelection(suite.id, testCase.sourceCaseId, $event.checked)"
+                              ></mat-checkbox>
+
+                              <div class="suite-case-option__copy">
+                                <strong>{{ testCase.title }}</strong>
+                                <span>{{ testCase.feature }} | {{ testCase.scenario }}</span>
+                                <div class="suite-case-option__meta">
+                                  <span>{{ testCase.testType }}</span>
+                                  <span>{{ testCase.priority }}</span>
+                                  <span>{{ testCase.severity }}</span>
+                                </div>
+                              </div>
+                            </label>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </article>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="planner-card__footer">
+            <div class="planner-card__summary">
+              <strong>{{ selectedCaseCount() }} cases</strong>
+              <span>will be snapshotted into this execution run from the selected sources.</span>
+            </div>
+            <button
+              mat-flat-button
+              class="brand-button"
+              type="button"
+              [disabled]="!canCreateRun() || creating()"
+              (click)="createRun()"
+            >
+              {{ creating() ? 'Creating...' : 'Create Test Run' }}
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <div class="aside-stack">
+        <mat-card class="summary-card summary-card--slate">
+          <mat-card-content class="summary-card__content">
+            <div class="summary-card__header">
+              <div>
+                <p class="section-eyebrow">Planning summary</p>
+                <h2>Execution snapshot</h2>
+              </div>
+            </div>
+
+            <div class="summary-grid">
+              <article>
+                <span>Scope</span>
+                <strong>{{ selectedScopePath() || 'Choose project, module, or page' }}</strong>
+              </article>
+              <article>
+                <span>Assigned tester</span>
+                <strong>{{ form.controls.assignedTester.value || 'Unassigned' }}</strong>
+              </article>
+              <article>
+                <span>Environment</span>
+                <strong>{{ form.controls.environment.value || 'Not specified' }}</strong>
+              </article>
+              <article>
+                <span>Build</span>
+                <strong>{{ form.controls.buildVersion.value || 'Not specified' }}</strong>
+              </article>
+            </div>
+
+            <div class="summary-kpis">
+              <div>
+                <strong>{{ selectedSuiteCount() }}</strong>
+                <span>selected suites</span>
+              </div>
+              <div>
+                <strong>{{ selectedCaseCount() }}</strong>
+                <span>selected cases</span>
+              </div>
+            </div>
+
+            <div class="workflow-steps">
+              <div>
+                <strong>1. Lock the scope</strong>
+                <span>Set project, module, and page before you select testcases.</span>
+              </div>
+              <div>
+                <strong>2. Choose exact cases</strong>
+                <span>Use suite-level bulk actions first, then refine the critical rows.</span>
+              </div>
+              <div>
+                <strong>3. Create and execute</strong>
+                <span>The run opens in Test Execution immediately after creation.</span>
+              </div>
+            </div>
+
+            @if (form.controls.notes.value) {
+              <div class="notes-preview">
+                <span>Run notes</span>
+                <p>{{ form.controls.notes.value }}</p>
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+
+      </div>
+    </section>
+  }
+</section>

@@ -1,0 +1,19 @@
+{
+  "generator": {
+    "architectureCols": 4,
+    "topGridCols": 2,
+    "bottomGridCols": 2,
+    "kbTriggerJustifyContent": "center",
+    "kbValueTextAlign": "center"
+  },
+  "dashboard": {
+    "actionsRightDelta": 0,
+    "createWidth": 144,
+    "executeWidth": 144,
+    "iconsPresent": true
+  },
+  "testRun": {
+    "searchTextAlign": "center",
+    "placeholder": "Search by title or path"
+  }
+}

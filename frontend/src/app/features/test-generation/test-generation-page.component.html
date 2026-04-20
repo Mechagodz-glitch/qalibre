@@ -1,0 +1,588 @@
+<section class="generator-page">
+  @if (loading()) {
+    <section class="centered">
+      <mat-spinner diameter="44"></mat-spinner>
+    </section>
+  } @else {
+    <app-page-header
+      title="Test Generator"
+      eyebrow="Test architecture workspace"
+      description="Define scope and architectural parameters to synthesize high-fidelity automated test cases from sources, explicit feature asks, and curated QA knowledge."
+    ></app-page-header>
+
+    <form class="generator-shell" [formGroup]="form">
+      <mat-card class="surface-card architecture-card">
+        <mat-card-content class="card-stack">
+          <div class="section-heading">
+            <div>
+              <span class="section-kicker">Project architecture</span>
+              <h2>Anchor the suite to the right workspace</h2>
+            </div>
+            <div class="section-heading-badges">
+              <span class="active-pill">{{ scopePillLabel() }}</span>
+              @if (suitePathLabel()) {
+                <span class="path-pill">{{ suitePathLabel() }}</span>
+              }
+            </div>
+          </div>
+
+          <div class="architecture-grid">
+            <article class="architecture-field">
+              <div class="architecture-field-meta" aria-hidden="true"></div>
+              <mat-form-field appearance="outline">
+                <mat-label>Client</mat-label>
+                <mat-select formControlName="projectId">
+                  <mat-option value="">Unassigned</mat-option>
+                  @for (project of projectHierarchy(); track project.id) {
+                    <mat-option [value]="project.id">{{ project.name }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </article>
+
+            <article class="architecture-field">
+              <div class="architecture-field-meta" aria-hidden="true"></div>
+              <mat-form-field appearance="outline">
+                <mat-label>Module</mat-label>
+                <mat-select formControlName="moduleId">
+                  <mat-option value="">Unassigned</mat-option>
+                  @for (module of availableModules(); track module.id) {
+                    <mat-option [value]="module.id">{{ module.name }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </article>
+
+            <article class="architecture-field architecture-field--page">
+              <div class="architecture-field-meta architecture-field-meta--toggle">
+                <mat-button-toggle-group
+                  class="mode-toggle"
+                  [value]="pageInputMode()"
+                  (change)="setPageInputMode($event.value)"
+                >
+                  <mat-button-toggle value="existing">Existing</mat-button-toggle>
+                  <mat-button-toggle value="new">New</mat-button-toggle>
+                </mat-button-toggle-group>
+              </div>
+
+              @if (pageInputMode() === 'existing') {
+                <mat-form-field appearance="outline">
+                  <mat-label>Page</mat-label>
+                  <mat-select formControlName="pageId">
+                    <mat-option value="">Unassigned</mat-option>
+                    @for (page of availablePages(); track page.id) {
+                      <mat-option [value]="page.id">{{ page.name }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              } @else {
+                <mat-form-field appearance="outline">
+                  <mat-label>New page</mat-label>
+                  <input matInput formControlName="pageName" placeholder="Type a page name to create it" />
+                </mat-form-field>
+              }
+            </article>
+
+            <article class="architecture-field architecture-field--feature">
+              <div class="architecture-field-meta architecture-field-meta--toggle">
+                <mat-button-toggle-group
+                  class="mode-toggle"
+                  [value]="featureInputMode()"
+                  (change)="setFeatureInputMode($event.value)"
+                >
+                  <mat-button-toggle value="existing">Existing</mat-button-toggle>
+                  <mat-button-toggle value="new">New</mat-button-toggle>
+                </mat-button-toggle-group>
+              </div>
+
+              @if (featureInputMode() === 'existing') {
+                <mat-form-field appearance="outline">
+                  <mat-label>Feature</mat-label>
+                  <mat-select formControlName="featureId">
+                    <mat-option value="">No feature selected</mat-option>
+                    @for (feature of availableFeatures(); track feature.id) {
+                      <mat-option [value]="feature.id">{{ feature.name }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              } @else {
+                <mat-form-field appearance="outline">
+                  <mat-label>New feature</mat-label>
+                  <input matInput formControlName="featureName" placeholder="Type a feature name to create it" />
+                </mat-form-field>
+              }
+            </article>
+
+            <article class="architecture-field architecture-field--owner">
+              <div class="architecture-field-meta" aria-hidden="true"></div>
+              <mat-form-field appearance="outline">
+                <mat-label>Owner</mat-label>
+                <input
+                  matInput
+                  [value]="currentUser()?.contributorName || currentUser()?.name || 'Signed-in user'"
+                  readonly
+                />
+              </mat-form-field>
+            </article>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <section class="top-grid">
+        <mat-card class="surface-card details-card">
+          <mat-card-content class="card-stack">
+            <div class="section-heading compact">
+              <div>
+                <span class="section-kicker">Generation details</span>
+                <h3>Define the suite brief</h3>
+              </div>
+            </div>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Generation title</mat-label>
+              <input matInput formControlName="title" placeholder="e.g., Sprint 24 Dashboard Regression" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Scope notes</mat-label>
+              <textarea
+                matInput
+                rows="5"
+                formControlName="description"
+                placeholder="Define specific context, known risks, or constraints for this generation run..."
+              ></textarea>
+            </mat-form-field>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="surface-card mode-panel">
+          <mat-card-content class="card-stack">
+            <div class="section-heading compact">
+              <div>
+                <span class="section-kicker">Generation mode</span>
+                <h3>Choose the driving context</h3>
+              </div>
+            </div>
+
+            <div class="mode-stack">
+              @for (mode of modeCards; track mode.value) {
+                <button
+                  type="button"
+                  class="mode-option"
+                  [class.active]="form.controls.mode.value === mode.value"
+                  (click)="setMode(mode.value)"
+                >
+                  <span class="mode-option-radio"></span>
+                  <span class="mode-option-copy">
+                    <strong>{{ mode.title }}</strong>
+                    <small>{{ mode.summary }}</small>
+                  </span>
+                </button>
+              }
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </section>
+
+      <mat-card class="surface-card features-card" [class.features-card--locked]="isFeatureScopeActive()">
+        <mat-card-content class="card-stack">
+          <div class="section-heading compact">
+            <div>
+              <span class="section-kicker">Add features</span>
+              <h3>Declare mandatory feature coverage</h3>
+            </div>
+            @if (isFeatureScopeActive()) {
+              <span class="hint-pill">Locked to selected feature</span>
+            } @else {
+              <span class="hint-pill">Press Enter to add tag</span>
+            }
+          </div>
+
+          @if (isFeatureScopeActive()) {
+            <p class="feature-scope-note">
+              Feature scope is active. The selected feature will drive generation coverage, so manual feature tags are disabled for this run.
+            </p>
+          }
+
+          <div class="feature-entry" [class.feature-entry--locked]="isFeatureScopeActive()">
+            <div class="feature-chip-list" [class.feature-chip-list--locked]="isFeatureScopeActive()">
+              @for (featureGroup of featureArray.controls; track featureGroup; let featureIndex = $index) {
+                <button
+                  type="button"
+                  class="feature-chip"
+                  (click)="removeFeature(featureIndex)"
+                  [disabled]="isFeatureScopeActive()"
+                >
+                  {{ featureGroup.get('value')?.value }}
+                  <span>&times;</span>
+                </button>
+              }
+
+              <input
+                class="feature-input"
+                [formControl]="featureDraft"
+                placeholder="Type feature name..."
+                [disabled]="isFeatureScopeActive()"
+                (keydown.enter)="$event.preventDefault(); addFeature()"
+              />
+            </div>
+
+            <button
+              mat-flat-button
+              type="button"
+              class="brand-button compact-button"
+              (click)="addFeature()"
+              [disabled]="isFeatureScopeActive() || !featureDraft.value.trim()"
+            >
+              Add feature
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <section class="sources-section">
+        <div class="section-heading">
+          <div>
+            <span class="section-kicker">Supporting sources</span>
+            <h2>Build the evidence base</h2>
+          </div>
+        </div>
+
+        <div class="source-tile-grid">
+          @for (sourceType of sourceTiles; track sourceType.value) {
+            <button type="button" class="source-tile" (click)="addSourceFromTile(sourceType.value)">
+              <span class="source-glyph">{{ sourceType.glyph }}</span>
+              <strong>{{ sourceType.label }}</strong>
+              <small>{{ sourceType.hint }}</small>
+            </button>
+          }
+        </div>
+
+        @if (sourceArray.length) {
+          <div class="source-editor-stack" formArrayName="sourceInputs">
+            @for (sourceGroup of sourceArray.controls; track sourceGroup; let sourceIndex = $index) {
+              <mat-card
+                class="surface-card source-editor"
+                [class.source-editor-collapsed]="!isSourceExpanded(sourceIndex)"
+                [class.source-editor-expanded]="isSourceExpanded(sourceIndex)"
+                [formGroupName]="sourceIndex"
+                [attr.data-source-card-index]="sourceIndex"
+              >
+                <mat-card-content class="card-stack">
+                  <div class="source-editor-head">
+                    <button type="button" class="source-editor-toggle" (click)="toggleSource(sourceIndex)">
+                      <div>
+                        <div class="source-chip">{{ sourceKindMeta(sourceGroup.get('kind')?.value).label }}</div>
+                        <h3>{{ sourceCardTitle(sourceIndex) }}</h3>
+                        <p>{{ sourceCardSubtitle(sourceIndex) }}</p>
+                      </div>
+                      <span class="source-accordion-arrow" [class.open]="isSourceExpanded(sourceIndex)" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                          <path d="m7 10 5 5 5-5z"></path>
+                        </svg>
+                      </span>
+                    </button>
+
+                    <button mat-button type="button" class="danger-text" (click)="removeSource(sourceIndex)">
+                      Remove
+                    </button>
+                  </div>
+
+                  @if (isSourceExpanded(sourceIndex)) {
+                    <div class="source-form-grid">
+                      <mat-form-field appearance="outline">
+                        <mat-label>URL</mat-label>
+                        <input matInput formControlName="url" placeholder="https://..." />
+                      </mat-form-field>
+
+                      <mat-form-field appearance="outline">
+                        <mat-label>File name</mat-label>
+                        <input matInput formControlName="filename" readonly />
+                      </mat-form-field>
+
+                      <div class="file-drop-box">
+                        <label>Attach files</label>
+                        <div class="file-input-row">
+                          <button mat-stroked-button type="button" (click)="filePicker.click()">Choose files</button>
+                          <span class="file-selection-copy">
+                            {{ sourceGroup.get('filename')?.value || 'No files attached yet' }}
+                          </span>
+                          <input
+                            #filePicker
+                            class="hidden-file-input"
+                            type="file"
+                            multiple
+                            [attr.accept]="acceptedFileTypesForSource(sourceGroup.get('kind')?.value)"
+                            (change)="onSourceFileSelected(sourceIndex, $event)"
+                          />
+                        </div>
+                        <small>Word, Excel, PDF, image, HTML mockup, or text evidence. Multiple files create multiple source cards.</small>
+                      </div>
+
+                      <mat-form-field appearance="outline" class="full-span">
+                        <mat-label>Content or extracted notes</mat-label>
+                        <textarea
+                          matInput
+                          rows="4"
+                          formControlName="contentText"
+                          placeholder="Paste story text, extracted document content, or screenshot annotations."
+                        ></textarea>
+                      </mat-form-field>
+
+                      <mat-form-field appearance="outline" class="full-span">
+                        <mat-label>Notes</mat-label>
+                        <textarea
+                          matInput
+                          rows="2"
+                          formControlName="notes"
+                          placeholder="Anything the generator should not miss from this source."
+                        ></textarea>
+                      </mat-form-field>
+                    </div>
+                  }
+                </mat-card-content>
+              </mat-card>
+            }
+          </div>
+        }
+      </section>
+
+      <mat-card class="surface-card kb-card">
+        <mat-card-content class="card-stack">
+          <div class="section-heading">
+            <div>
+              <span class="section-kicker">Knowledge base</span>
+              <h2>Layer in curated QA intelligence</h2>
+            </div>
+            <span class="active-pill">{{ currentModeCard().value === 'processBeta' ? 'Active mode' : 'Assist mode' }}</span>
+          </div>
+
+          <div class="kb-selection-grid">
+            @for (section of datasetSections; track section.key) {
+              <article class="kb-selection-block">
+                <div class="kb-selection-head">
+                  <strong>{{ section.label }}</strong>
+                  <small>{{ section.description }}</small>
+                </div>
+
+                <div class="kb-selection-actions">
+                  <button
+                    mat-button
+                    type="button"
+                    (click)="selectAllSection(section.key)"
+                    [disabled]="!optionsForSection(section.key).length || areAllOptionsSelected(section.key)"
+                  >
+                    Select all
+                  </button>
+                  <button
+                    mat-button
+                    type="button"
+                    (click)="clearSection(section.key)"
+                    [disabled]="!getSelectionCount(section.key)"
+                  >
+                    Unselect all
+                  </button>
+                </div>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>{{ section.label }}</mat-label>
+                  <mat-select [formControlName]="section.key" multiple>
+                    <mat-select-trigger>
+                      @if (getSelectionCount(section.key)) {
+                        <span class="selection-trigger">
+                          {{ getSelectionCount(section.key) }} selected
+                        </span>
+                      } @else {
+                        <span class="selection-trigger selection-trigger--placeholder">
+                          Select {{ section.label }}
+                        </span>
+                      }
+                    </mat-select-trigger>
+                    @for (option of optionsForSection(section.key); track option.id) {
+                      <mat-option [value]="option.id">{{ option.title }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                @if (selectedTitlesForSection(section.key).length) {
+                  <div class="kb-chip-list">
+                    @for (title of selectedTitlesForSection(section.key); track title) {
+                      <span class="kb-chip">{{ title }}</span>
+                    }
+                  </div>
+                }
+              </article>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <section class="bottom-grid">
+        <mat-card class="surface-card coverage-card">
+          <mat-card-content class="card-stack">
+            <div class="section-heading compact">
+              <div>
+                <span class="section-kicker">Coverage matrix</span>
+                <h3>Shape the suite breadth</h3>
+              </div>
+            </div>
+
+            <div class="coverage-grid">
+              @for (option of coverageOptions; track option.control) {
+                <label class="coverage-option" [class.selected]="coverageOptionSelected(option.control)">
+                  <mat-checkbox [formControlName]="option.control">{{ option.label }}</mat-checkbox>
+                </label>
+              }
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="surface-card infrastructure-card">
+          <mat-card-content class="card-stack">
+            <div class="section-heading compact">
+              <div>
+                <span class="section-kicker">Target infrastructure</span>
+                <h3>Define browser and viewport spread</h3>
+              </div>
+            </div>
+
+            <div class="infrastructure-stack">
+              <div class="infrastructure-field">
+                <span class="infrastructure-label">Browsers</span>
+                <mat-form-field appearance="outline">
+                  <mat-select formControlName="targetBrowsers" multiple aria-label="Target browsers">
+                    <mat-select-trigger>
+                      <span class="selection-trigger" [title]="selectedBrowserSummary()">{{ selectedBrowserSummary() }}</span>
+                    </mat-select-trigger>
+                    @for (browser of browserOptions; track browser) {
+                      <mat-option [value]="browser">{{ browser }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <div class="infrastructure-field">
+                <span class="infrastructure-label">Screen Sizes</span>
+                <mat-form-field appearance="outline">
+                  <mat-select formControlName="screenSizes" multiple aria-label="Screen sizes">
+                    <mat-select-trigger>
+                      <span class="selection-trigger" [title]="selectedScreenSizeSummary()">{{ selectedScreenSizeSummary() }}</span>
+                    </mat-select-trigger>
+                    @for (size of screenSizeOptions; track size.value) {
+                      <mat-option [value]="size.value">{{ size.label }} ({{ size.resolution }})</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </section>
+
+      <mat-card class="surface-card launch-card">
+        <mat-card-content class="launch-bar">
+          <div>
+            <span class="section-kicker">Launch</span>
+            <h2>Generate test cases</h2>
+            <p class="page-copy">
+              The run will stream live preview batches as they complete and the draft will open as soon as it is ready
+              for review.
+            </p>
+          </div>
+
+          <div class="launch-actions">
+            <a mat-button routerLink="/test-generator/review">Open drafts</a>
+            <a mat-button routerLink="/test-generator/runs">View run history</a>
+            @if (currentTrackedRun()?.status === 'pending') {
+              <button mat-stroked-button type="button" color="warn" (click)="stopTrackedRun()">Stop generation</button>
+            }
+            <button mat-flat-button class="brand-button launch-button" type="button" (click)="submit()" [disabled]="submitting()">
+              @if (submitting()) {
+                Generating...
+              } @else {
+                Generate test cases
+              }
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </form>
+
+    @if (currentTrackedRun(); as run) {
+      <section class="live-run-shell">
+        <mat-card class="surface-card run-summary-card">
+          <mat-card-content class="card-stack">
+            <div class="section-heading compact">
+              <div>
+                <span class="section-kicker">Live generation</span>
+                <h3>{{ run.title }}</h3>
+              </div>
+              <span class="run-status" [class]="'status-' + run.status">{{ run.status }}</span>
+            </div>
+
+            <p class="page-copy">{{ formatRunPhase(run) }}</p>
+
+            <div class="progress-track">
+              <span [style.width.%]="progressWidth(run)"></span>
+            </div>
+
+            <div class="run-metrics">
+              <div>
+                <span>Cases surfaced</span>
+                <strong>{{ run.progress?.generatedCaseCount ?? 0 }}</strong>
+              </div>
+              <div>
+                <span>Batches</span>
+                <strong>{{ run.progress?.completedBatches ?? 0 }}/{{ run.progress?.totalBatches ?? 0 }}</strong>
+              </div>
+              <div>
+                <span>Retry</span>
+                <strong>{{ run.progress?.retryTriggered ? 'Yes' : 'No' }}</strong>
+              </div>
+            </div>
+
+            <div class="launch-actions">
+              <a mat-button routerLink="/test-generator/runs">Open run details</a>
+              @if (run.status === 'pending') {
+                <button mat-stroked-button type="button" color="warn" (click)="stopTrackedRun()">Stop generation</button>
+              }
+              @if (run.draftId) {
+                <a mat-flat-button class="brand-button compact-button" [routerLink]="['/test-generator/review']" [queryParams]="{ draftId: run.draftId }">
+                  Open review draft
+                </a>
+              }
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="surface-card preview-card">
+          <mat-card-content class="card-stack">
+            <div class="section-heading compact">
+              <div>
+                <span class="section-kicker">Generated preview</span>
+                <h3>Cases appearing during generation</h3>
+              </div>
+            </div>
+
+            @if (hasPreviewCases(run)) {
+              <div class="preview-stack">
+                @for (item of previewCases(); track item.title + item.feature + item.scenario) {
+                  <article class="preview-case">
+                    <strong>{{ item.title }}</strong>
+                    <span>{{ item.feature }}</span>
+                    <small>{{ item.scenario }}</small>
+                  </article>
+                }
+              </div>
+            } @else {
+              <app-empty-state
+                title="Preview will populate shortly"
+                description="As each batch completes, the newest generated cases will list here automatically."
+              />
+            }
+          </mat-card-content>
+        </mat-card>
+      </section>
+    }
+  }
+</section>

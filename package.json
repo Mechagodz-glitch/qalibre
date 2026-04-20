@@ -1,0 +1,31 @@
+{
+  "name": "qa-dataset-workbench",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "npm@11.4.2",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace backend\" \"npm run dev --workspace frontend\"",
+    "build": "npm run build --workspace backend && npm run build --workspace frontend",
+    "lint": "npm run lint --workspace backend && npm run lint --workspace frontend",
+    "test": "npm run test --workspace backend && npm run test --workspace frontend",
+    "compose:up": "docker compose up -d",
+    "compose:down": "docker compose down",
+    "compose:logs": "docker compose logs -f postgres backend frontend",
+    "import:tpulse:rulepacks": "node scripts/import-dataset-artifact.mjs rulePack artifacts/tpulse-safety-revamp-dev/rule-packs.workbench.json",
+    "import:tpulse:featuretypes": "node scripts/import-dataset-artifact.mjs featureType artifacts/tpulse-safety-revamp-dev/feature-types.json",
+    "import:tpulse": "npm run import:tpulse:rulepacks && npm run import:tpulse:featuretypes",
+    "prisma:migrate": "npm run prisma:migrate --workspace backend",
+    "prisma:seed": "npm run prisma:seed --workspace backend",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "concurrently": "^9.2.1",
+    "ws": "^8.18.3"
+  }
+}

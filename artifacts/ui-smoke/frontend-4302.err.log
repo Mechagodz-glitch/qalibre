@@ -1,0 +1,15 @@
+[1m[33m
+Warning: This is a simple server for use in testing or debugging Angular applications
+locally. It hasn't been reviewed for security issues.
+
+Binding this server to an open connection can result in compromising your application or
+computer. Using a different host than the one passed to the "--host" flag might result in
+websocket connection issues.
+    [39m[22m
+npm error Lifecycle script `dev` failed with error:
+npm error code 4294967295
+npm error path C:\Users\Khyati\VS_Code_Projects\qa-assistant\frontend
+npm error workspace qa-dataset-workbench-frontend@0.0.0
+npm error location C:\Users\Khyati\VS_Code_Projects\qa-assistant\frontend
+npm error command failed
+npm error command C:\Windows\system32\cmd.exe /d /s /c ng serve --host 0.0.0.0 --poll 1000 --port 4302

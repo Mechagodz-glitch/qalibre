@@ -1,0 +1,168 @@
+<section class="page-stack">
+  <app-page-header
+    eyebrow="Approved library"
+    title="Testcase Library"
+    description="Browse approved suites as client, module, page, and feature folders, then export the exact scope you need."
+  >
+    <div class="header-actions">
+      <div class="summary-strip">
+        @for (card of summaryCards(); track card.label) {
+          <article class="summary-chip">
+            <span>{{ card.label }}</span>
+            <strong>{{ card.value }}</strong>
+          </article>
+        }
+      </div>
+      <button
+        mat-flat-button
+        class="brand-button"
+        type="button"
+        (click)="exportAll()"
+        [disabled]="loading() || isExporting('all')"
+      >
+        @if (isExporting('all')) {
+          Exporting library...
+        } @else {
+          Export entire library
+        }
+      </button>
+    </div>
+  </app-page-header>
+
+  @if (loading()) {
+    <section class="centered">
+      <mat-spinner diameter="42"></mat-spinner>
+    </section>
+  } @else if (!library()?.items?.length) {
+    <app-empty-state
+      title="No approved suites yet"
+      description="Approve generated suites to start building the testcase library hierarchy."
+    />
+  } @else {
+    <mat-card class="library-card">
+      <mat-card-content class="library-card__content">
+        <section class="toolbar">
+          <div class="toolbar__heading">
+            <p class="toolbar__eyebrow">Library table</p>
+            <h2>Folder hierarchy</h2>
+            <span>{{ rowsInViewLabel() }}</span>
+          </div>
+
+          <div class="toolbar__filters">
+            <label class="search-field" aria-label="Search testcase library">
+              <span class="search-field__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M10.5 4a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13Zm0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9Zm8.91 10.5 2.59 2.59L20.59 21 18 18.41v-1.5l-.51-.5a8.47 8.47 0 0 1-6.99 3.59A8.5 8.5 0 1 1 19 10.5a8.47 8.47 0 0 1-3.59 6.99l.5.51h1.5Z"></path>
+                </svg>
+              </span>
+              <input
+                type="search"
+                placeholder="Search folders or QA owners"
+                [value]="searchTerm()"
+                (input)="setSearchTerm($any($event.target).value)"
+              />
+            </label>
+
+            <div class="kind-filters" role="tablist" aria-label="Folder type filters">
+              @for (filter of kindFilters; track filter.value) {
+                <button
+                  type="button"
+                  class="kind-filter"
+                  [class.kind-filter--active]="isKindFilterActive(filter.value)"
+                  (click)="setKindFilter(filter.value)"
+                >
+                  {{ filter.label }}
+                </button>
+              }
+            </div>
+          </div>
+        </section>
+
+        <div class="table-shell">
+          <div class="table-head">
+            <span>Folder</span>
+            <span>Type</span>
+            <span>QA owners</span>
+            <span>Approved suites</span>
+            <span>Approved cases</span>
+            <span class="table-head__actions">Actions</span>
+          </div>
+
+          @if (!visibleRows().length) {
+            <div class="table-empty">
+              <h3>No matching folders</h3>
+              <p>Adjust the search or folder type filter to see more approved suite paths.</p>
+            </div>
+          } @else {
+            <div class="table-body">
+              @for (row of visibleRows(); track row.node.id) {
+                <article class="table-row">
+                  <div class="table-cell table-cell--folder">
+                    <div
+                      class="folder-cell"
+                      [style.padding-left]="rowIndent(row.depth)"
+                      [attr.title]="row.node.path"
+                    >
+                      @if (row.hasChildren) {
+                        <button
+                          type="button"
+                          class="expand-button"
+                          [class.expand-button--open]="row.isExpanded"
+                          (click)="toggleExpanded(row.node.id)"
+                          [attr.aria-label]="row.isExpanded ? 'Collapse row' : 'Expand row'"
+                        >
+                          <span aria-hidden="true">></span>
+                        </button>
+                      } @else {
+                        <span class="expand-spacer" aria-hidden="true"></span>
+                      }
+
+                      <div class="folder-copy">
+                        <strong>{{ row.node.name }}</strong>
+                        <span>{{ row.node.path }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="table-cell">
+                    <span class="kind-pill kind-pill--{{ row.node.kind }}">{{ kindLabel(row.node.kind) }}</span>
+                  </div>
+
+                  <div class="table-cell">
+                    <span class="owners-cell" [attr.title]="qaOwnersLabel(row.node)">
+                      {{ qaOwnersLabel(row.node) }}
+                    </span>
+                  </div>
+
+                  <div class="table-cell">
+                    <strong>{{ row.node.approvedSuiteCount }}</strong>
+                  </div>
+
+                  <div class="table-cell">
+                    <strong>{{ row.node.approvedCaseCount }}</strong>
+                  </div>
+
+                  <div class="table-cell table-cell--actions">
+                    <button
+                      mat-stroked-button
+                      type="button"
+                      class="export-button"
+                      (click)="exportNode(row.node)"
+                      [disabled]="isExporting(row.node.id)"
+                    >
+                      @if (isExporting(row.node.id)) {
+                        Exporting...
+                      } @else {
+                        Export CSV
+                      }
+                    </button>
+                  </div>
+                </article>
+              }
+            </div>
+          }
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+</section>

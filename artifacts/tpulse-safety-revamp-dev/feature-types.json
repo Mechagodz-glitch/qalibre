@@ -1,0 +1,476 @@
+[
+  {
+    "name": "Safety Portal Authentication",
+    "description": "Feature family for sign-in, session continuity, logout, and account-level authenticated entry into the safety portal.",
+    "applicableComponents": [
+      "Login Form",
+      "User Avatar Menu",
+      "Sidebar Navigation Rail"
+    ],
+    "applicableRulePacks": [
+      "Authentication And Session Management"
+    ],
+    "applicableTestTypes": [
+      "smoke",
+      "functional",
+      "regression",
+      "security",
+      "accessibility"
+    ],
+    "defaultScenarioBuckets": [
+      "happy path",
+      "credential validation",
+      "session continuity",
+      "access control"
+    ],
+    "tags": [
+      "tpulse",
+      "safety-portal",
+      "authentication",
+      "session"
+    ]
+  },
+  {
+    "name": "Safety Portal Shell Navigation",
+    "description": "Feature family for the persistent post-login shell, shared navigation rail, account menu, and route-level affordances.",
+    "applicableComponents": [
+      "Sidebar Navigation Rail",
+      "User Avatar Menu",
+      "Pagination Control"
+    ],
+    "applicableRulePacks": [
+      "Authentication And Session Management",
+      "Shell Navigation And Account Access"
+    ],
+    "applicableTestTypes": [
+      "smoke",
+      "functional",
+      "regression",
+      "accessibility"
+    ],
+    "defaultScenarioBuckets": [
+      "route access",
+      "active state",
+      "badge integrity",
+      "account actions"
+    ],
+    "tags": [
+      "tpulse",
+      "safety-portal",
+      "shell",
+      "navigation"
+    ]
+  },
+  {
+    "name": "Safety Portal Shared Filtering",
+    "description": "Feature family for shared unit, date, and dialog-based filters that drive page scope across dashboard and record views.",
+    "applicableComponents": [
+      "Shared Filter Bar",
+      "Filter Dialog"
+    ],
+    "applicableRulePacks": [
+      "Shared Filtering And Scope Control"
+    ],
+    "applicableTestTypes": [
+      "smoke",
+      "functional",
+      "integration",
+      "regression",
+      "accessibility"
+    ],
+    "defaultScenarioBuckets": [
+      "default scope",
+      "unit selection",
+      "date selection",
+      "filter persistence"
+    ],
+    "tags": [
+      "tpulse",
+      "safety-portal",
+      "filters",
+      "scope"
+    ]
+  },
+  {
+    "name": "Safety Portal Dashboard KPI Monitoring",
+    "description": "Feature family for home-page summary cards, split counts, and drilldown behavior across dashboard KPI surfaces.",
+    "applicableComponents": [
+      "Metric Card",
+      "Visualization Panel"
+    ],
+    "applicableRulePacks": [
+      "Dashboard KPI Cards And Segregation Drilldowns",
+      "Shared Filtering And Scope Control"
+    ],
+    "applicableTestTypes": [
+      "smoke",
+      "functional",
+      "integration",
+      "regression",
+      "accessibility"
+    ],
+    "defaultScenarioBuckets": [
+      "totals integrity",
+      "split accuracy",
+      "drilldowns",
+      "empty states"
+    ],
+    "tags": [
+      "tpulse",
+      "safety-portal",
+      "dashboard",
+      "kpi"
+    ]
+  },
+  {
+    "name": "Safety Portal Dashboard Trend Analysis",
+    "description": "Feature family for dashboard trend charts, tabbed chart modes, tooltips, and scope-driven visual refresh.",
+    "applicableComponents": [
+      "Visualization Panel",
+      "Shared Filter Bar"
+    ],
+    "applicableRulePacks": [
+      "Dashboard Trend Visualization Tabs",
+      "Shared Filtering And Scope Control"
+    ],
+    "applicableTestTypes": [
+      "smoke",
+      "functional",
+      "integration",
+      "regression",
+      "accessibility"
+    ],
+    "defaultScenarioBuckets": [
+      "tab switching",
+      "tooltip accuracy",
+      "chart alignment",
+      "filter refresh"
+    ],
+    "tags": [
+      "tpulse",
+      "safety-portal",
+      "dashboard",
+      "trend"
+    ]
+  },
+  {
+    "name": "Safety Portal Category Monitoring",
+    "description": "Feature family for category tiles, compact and expanded segregation, and section-level date behavior on the dashboard.",
+    "applicableComponents": [
+      "Category Summary Tile Grid",
+      "Shared Filter Bar",
+      "Visualization Panel"
+    ],
+    "applicableRulePacks": [
+      "Life Saving Rule Category Monitoring",
+      "Shared Filtering And Scope Control"
+    ],
+    "applicableTestTypes": [
+      "smoke",
+      "functional",
+      "integration",
+      "regression",
+      "accessibility"
+    ],
+    "defaultScenarioBuckets": [
+      "compact vs expanded",
+      "selected vs custom dates",
+      "segregation totals",
+      "no-data states"
+    ],
+    "tags": [
+      "tpulse",
+      "safety-portal",
+      "categories",
+      "monitoring"
+    ]
+  },
+  {
+    "name": "Safety Portal High Risk Observation Handoff",
+    "description": "Feature family for high-risk recent-record surfacing, carousel behavior, and handoff into observation review flows.",
+    "applicableComponents": [
+      "Record Carousel",
+      "Selectable Record List",
+      "Record Detail Panel"
+    ],
+    "applicableRulePacks": [
+      "High Risk Observation Carousel And Handoff",
+      "Record List Selection And Master Detail"
+    ],
+    "applicableTestTypes": [
+      "smoke",
+      "functional",
+      "regression",
+      "accessibility"
+    ],
+    "defaultScenarioBuckets": [
+      "qualification logic",
+      "carousel navigation",
+      "fallback content",
+      "handoff accuracy"
+    ],
+    "tags": [
+      "tpulse",
+      "safety-portal",
+      "high-risk",
+      "handoff"
+    ]
+  },
+  {
+    "name": "Safety Portal Insights Assistant",
+    "description": "Feature family for the dashboard-side assistant, insight cards, suggested prompts, and history-aware conversation flows.",
+    "applicableComponents": [
+      "Assistant Drawer",
+      "History Drawer"
+    ],
+    "applicableRulePacks": [
+      "Dashboard Insights Assistant Interaction"
+    ],
+    "applicableTestTypes": [
+      "smoke",
+      "functional",
+      "integration",
+      "regression",
+      "accessibility"
+    ],
+    "defaultScenarioBuckets": [
+      "drawer render",
+      "ask flow",
+      "history state",
+      "failure handling"
+    ],
+    "tags": [
+      "tpulse",
+      "safety-portal",
+      "assistant",
+      "insights"
+    ]
+  },
+  {
+    "name": "Safety Portal Analytics Exploration",
+    "description": "Feature family for analytics cards, chart panels, heat maps, and hierarchical table exploration.",
+    "applicableComponents": [
+      "Metric Card",
+      "Visualization Panel",
+      "Expandable Treegrid Table",
+      "Shared Filter Bar"
+    ],
+    "applicableRulePacks": [
+      "Analytics Visualization And Hierarchical Data",
+      "Shared Filtering And Scope Control"
+    ],
+    "applicableTestTypes": [
+      "smoke",
+      "functional",
+      "integration",
+      "regression",
+      "performance",
+      "accessibility"
+    ],
+    "defaultScenarioBuckets": [
+      "summary integrity",
+      "chart controls",
+      "hierarchy expansion",
+      "large datasets"
+    ],
+    "tags": [
+      "tpulse",
+      "safety-portal",
+      "analytics",
+      "visualization"
+    ]
+  },
+  {
+    "name": "Safety Portal Timeline Review",
+    "description": "Feature family for timeline exploration, selected-day inspection, detail-pane refresh, and scoped review workflows.",
+    "applicableComponents": [
+      "Timeline Explorer",
+      "Record Detail Panel",
+      "Shared Filter Bar",
+      "Filter Dialog"
+    ],
+    "applicableRulePacks": [
+      "Timeline Review And Media Inspection",
+      "Shared Filtering And Scope Control"
+    ],
+    "applicableTestTypes": [
+      "smoke",
+      "functional",
+      "integration",
+      "regression",
+      "accessibility"
+    ],
+    "defaultScenarioBuckets": [
+      "day selection",
+      "sort and filter coherence",
+      "detail alignment",
+      "reset behavior"
+    ],
+    "tags": [
+      "tpulse",
+      "safety-portal",
+      "timeline",
+      "review"
+    ]
+  },
+  {
+    "name": "Safety Portal Record Management",
+    "description": "Feature family for observation and action lists, master-detail behavior, row selection, and paginated list operations.",
+    "applicableComponents": [
+      "Action Toolbar",
+      "Selectable Record List",
+      "Record Detail Panel",
+      "Pagination Control"
+    ],
+    "applicableRulePacks": [
+      "Record List Selection And Master Detail",
+      "Shared Filtering And Scope Control"
+    ],
+    "applicableTestTypes": [
+      "smoke",
+      "functional",
+      "integration",
+      "regression",
+      "accessibility"
+    ],
+    "defaultScenarioBuckets": [
+      "selection state",
+      "detail sync",
+      "bulk enablement",
+      "paging"
+    ],
+    "tags": [
+      "tpulse",
+      "safety-portal",
+      "records",
+      "master-detail"
+    ]
+  },
+  {
+    "name": "Safety Portal Action Governance",
+    "description": "Feature family for action detail governance, linked observations, evidence constraints, and audit history review.",
+    "applicableComponents": [
+      "Action Toolbar",
+      "Record Detail Panel",
+      "History Drawer"
+    ],
+    "applicableRulePacks": [
+      "Action Workflow And Audit History"
+    ],
+    "applicableTestTypes": [
+      "smoke",
+      "functional",
+      "integration",
+      "regression",
+      "accessibility"
+    ],
+    "defaultScenarioBuckets": [
+      "workflow metadata",
+      "linked records",
+      "history integrity",
+      "evidence constraints"
+    ],
+    "tags": [
+      "tpulse",
+      "safety-portal",
+      "actions",
+      "audit"
+    ]
+  },
+  {
+    "name": "Safety Portal Reporting",
+    "description": "Feature family for report-request entry, report lists, and viewer resilience in document-oriented workflows.",
+    "applicableComponents": [
+      "Report Generation Modal",
+      "Selectable Record List",
+      "Pagination Control",
+      "Action Toolbar"
+    ],
+    "applicableRulePacks": [
+      "Reports And Document Access",
+      "Record List Selection And Master Detail"
+    ],
+    "applicableTestTypes": [
+      "smoke",
+      "functional",
+      "integration",
+      "regression",
+      "accessibility"
+    ],
+    "defaultScenarioBuckets": [
+      "request entry",
+      "required fields",
+      "list stability",
+      "viewer resilience"
+    ],
+    "tags": [
+      "tpulse",
+      "safety-portal",
+      "reports",
+      "documents"
+    ]
+  },
+  {
+    "name": "Safety Portal Notification Triage",
+    "description": "Feature family for unread counts, tabbed notification feeds, per-item actions, and alert triage workflows.",
+    "applicableComponents": [
+      "Notification Center",
+      "Notification Feed Item",
+      "Metric Card",
+      "Sidebar Navigation Rail",
+      "Pagination Control"
+    ],
+    "applicableRulePacks": [
+      "Notification Feed And Alert Triage",
+      "Shell Navigation And Account Access"
+    ],
+    "applicableTestTypes": [
+      "smoke",
+      "functional",
+      "integration",
+      "regression",
+      "accessibility"
+    ],
+    "defaultScenarioBuckets": [
+      "feed switching",
+      "unread alignment",
+      "item actions",
+      "global actions"
+    ],
+    "tags": [
+      "tpulse",
+      "safety-portal",
+      "notifications",
+      "triage"
+    ]
+  },
+  {
+    "name": "Safety Portal Help And Reference",
+    "description": "Feature family for tabbed help content, category guidance, mapping references, and embedded manual delivery.",
+    "applicableComponents": [
+      "Help Reference Workspace"
+    ],
+    "applicableRulePacks": [
+      "Help And Reference Content Delivery"
+    ],
+    "applicableTestTypes": [
+      "smoke",
+      "functional",
+      "regression",
+      "compatibility",
+      "accessibility"
+    ],
+    "defaultScenarioBuckets": [
+      "tab switching",
+      "content alignment",
+      "manual loading",
+      "asset failures"
+    ],
+    "tags": [
+      "tpulse",
+      "safety-portal",
+      "help",
+      "reference"
+    ]
+  }
+]

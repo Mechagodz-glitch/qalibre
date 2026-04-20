@@ -1,0 +1,612 @@
+<section class="review-page">
+  @if (loading()) {
+    <section class="centered"><mat-spinner diameter="42"></mat-spinner></section>
+  } @else if (!drafts().length) {
+    <app-empty-state
+      title="No generated drafts"
+      description="Run Source-Driven or Knowledge Base-Driven generation from the Generator page to create reviewable test case drafts."
+    />
+  } @else if (selectedDraft()) {
+    <section class="hero-panel">
+      <div class="hero-copy">
+        <div class="hero-copy__header">
+          <p class="hero-kicker">Review and approval</p>
+          <h1>Generated Test Case Review</h1>
+          <p>{{ suiteDescriptionLine() }}</p>
+        </div>
+
+        <div class="hero-summary-band" aria-label="Suite review summary">
+          <article class="hero-summary-card total">
+            <span>Total</span>
+            <strong>{{ reviewedCaseSummary().total }}</strong>
+          </article>
+          <article class="hero-summary-card approved">
+            <span>Approved</span>
+            <strong>{{ reviewedCaseSummary().approved }}</strong>
+          </article>
+          <article class="hero-summary-card rejected">
+            <span>Rejected</span>
+            <strong>{{ reviewedCaseSummary().rejected }}</strong>
+          </article>
+          <article class="hero-summary-card pending">
+            <span>Pending</span>
+            <strong>{{ reviewedCaseSummary().pending }}</strong>
+          </article>
+        </div>
+      </div>
+
+      <div class="hero-actions">
+        <button
+          mat-flat-button
+          class="brand-button"
+          type="button"
+          (click)="approve()"
+          [disabled]="isSelectedDraftLocked() || !canFinalizeSelectedDraft()"
+        >
+          Finalize Suite
+        </button>
+        <button
+          mat-flat-button
+          class="brand-button danger-button"
+          type="button"
+          (click)="reject()"
+          [disabled]="isSelectedDraftLocked() || selectedDraft()!.reviewStatus === 'rejected'"
+        >
+          Reject Suite
+        </button>
+        <button
+          mat-flat-button
+          class="brand-button secondary-button hero-download-button"
+          type="button"
+          (click)="enableSuiteEditing()"
+          [disabled]="!canEnterSuiteEditMode()"
+          matTooltip="Rejected and finalized suits require edit mode before they can be changed again."
+          aria-label="Edit suite"
+        >
+          <span>Edit Suite</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="review-layout">
+      <aside class="review-rail">
+        <mat-card class="surface-card rail-card queue-card">
+          <mat-card-content class="card-stack">
+            <div class="rail-head">
+              <div class="deck-title-block">
+                <h3 class="deck-title">Suits Deck</h3>
+              </div>
+              <span class="queue-count">{{ visibleDraftCount() }} suits</span>
+            </div>
+
+            <!-- <div class="rail-head">
+              <span class="queue-count">Pending</span>
+              <span class="queue-count">Rejected</span>
+              <span class="queue-count">Approved</span>
+            </div>
+            <div class="search-queue">
+              <input type="search" placeholder="Search drafts…" />
+            </div> -->
+
+            <div class="deck-filter-row" [class.has-active-filter]="draftStatusFilter() !== 'all'">
+              <button
+                type="button"
+                class="deck-filter-chip deck-filter-chip--approved"
+                [class.active]="isDraftStatusActive('approved')"
+                (click)="toggleDraftStatusFilter('approved')"
+              >
+                <span class="deck-filter-chip__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="m9.55 17.2-4.2-4.2 1.4-1.4 2.8 2.8 7.7-7.7 1.4 1.4-9.1 9.1Z" />
+                  </svg>
+                </span>
+                Approved
+              </button>
+              <button
+                type="button"
+                class="deck-filter-chip deck-filter-chip--rejected"
+                [class.active]="isDraftStatusActive('rejected')"
+                (click)="toggleDraftStatusFilter('rejected')"
+              >
+                <span class="deck-filter-chip__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12 19 6.4 17.6 5 12 10.6 6.4 5Z" />
+                  </svg>
+                </span>
+                Rejected
+              </button>
+              <button
+                type="button"
+                class="deck-filter-chip deck-filter-chip--pending"
+                [class.active]="isDraftStatusActive('pending')"
+                (click)="toggleDraftStatusFilter('pending')"
+              >
+                <span class="deck-filter-chip__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 1.75a10.25 10.25 0 1 0 10.25 10.25A10.26 10.26 0 0 0 12 1.75Zm0 18.5A8.25 8.25 0 1 1 20.25 12 8.26 8.26 0 0 1 12 20.25Zm.75-13.5h-1.5v6l5 3 .75-1.23-4.25-2.52Z" />
+                  </svg>
+                </span>
+                Pending
+              </button>
+            </div>
+
+            <label class="deck-search" aria-label="Search suits">
+              <span class="field-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M10.5 4a6.5 6.5 0 1 0 4.03 11.6l4.43 4.43 1.41-1.41-4.43-4.43A6.5 6.5 0 0 0 10.5 4Zm0 2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Z"
+                  />
+                </svg>
+              </span>
+              <input
+                type="search"
+                [value]="draftSearchTerm()"
+                (input)="setDraftSearchTerm($any($event.target).value)"
+                placeholder="Search drafts..."
+              />
+            </label>
+
+            <div class="draft-stack">
+              @if (filteredDrafts().length) {
+                @for (draft of filteredDrafts(); track draft.id) {
+                <button
+                  class="draft-item"
+                  [class.active]="draft.id === selectedDraft()!.id"
+                  [class.draft-item--switching]="isDraftSwitching(draft.id)"
+                  [disabled]="draftSelectionId() !== null"
+                  [attr.aria-busy]="isDraftSwitching(draft.id)"
+                  type="button"
+                  (click)="selectDraft(draft.id)"
+                >
+                  <div class="draft-copy">
+                    <strong>{{ draft.title }}</strong>
+                    <small>{{ draftMetaLine(draft) }}</small>
+                  </div>
+                  <div class="draft-item__state">
+                    @if (isDraftSwitching(draft.id)) {
+                      <mat-spinner diameter="16" strokeWidth="3" class="action-spinner action-spinner--inline"></mat-spinner>
+                      <small>Loading suite...</small>
+                    } @else {
+                      <app-status-badge [status]="draft.reviewStatus" [label]="draft.reviewStatus"></app-status-badge>
+                      <span class="draft-item__tester">{{ draftTesterName(draft) }}</span>
+                    }
+                  </div>
+                  <div class="draft-progress">
+                    <span [style.width.%]="draftProgressWidth(draft)"></span>
+                  </div>
+                </button>
+                }
+              } @else {
+                <div class="deck-empty-state">
+                  <strong>No suits match the current filters.</strong>
+                  <p>Search by suite name or switch the approval status filters.</p>
+                </div>
+              }
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </aside>
+
+      <section class="review-main">
+        <mat-card class="surface-card status-strip">
+          <mat-card-content>
+            <div class="status-pills">
+              <div class="status-pill neutral">
+                <span class="status-pill__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 1.75a10.25 10.25 0 1 0 10.25 10.25A10.26 10.26 0 0 0 12 1.75Zm0 18.5A8.25 8.25 0 1 1 20.25 12 8.26 8.26 0 0 1 12 20.25Zm.75-13.5h-1.5v6l5 3 .75-1.23-4.25-2.52Z"></path>
+                  </svg>
+                </span>
+                <div class="status-pill__copy">
+                  <span>Last edit</span>
+                  <strong>{{ selectedDraft()!.updatedAt | date: 'medium' }}</strong>
+                </div>
+              </div>
+              <button
+                type="button"
+                class="status-pill success status-pill--interactive"
+                (click)="openCoverageAnalysisDialog()"
+                [disabled]="!currentCoverageAnalysis()"
+                matTooltip="View coverage analysis"
+                aria-label="View coverage analysis"
+              >
+                <span class="status-pill__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"></path>
+                  </svg>
+                </span>
+                <div class="status-pill__copy">
+                  <span>Coverage confidence</span>
+                  <strong>
+                    @if (currentCoverageAnalysis()) {
+                      {{ coverageScorePercent() }}%
+                    } @else {
+                      Pending
+                    }
+                  </strong>
+                  <small>{{ coverageQuotaLabel() }}</small>
+                </div>
+              </button>
+            </div>
+            <div class="status-actions">
+              <button
+                mat-button
+                type="button"
+                class="icon-action-button danger-icon"
+                (click)="reject()"
+                [disabled]="isSelectedDraftLocked() || selectedDraft()!.reviewStatus === 'rejected'"
+                matTooltip="Reject draft"
+                aria-label="Reject draft"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm1 6h2v8h-2V9Zm4 0h2v8h-2V9ZM7 9h2v8H7V9Zm-1 12a2 2 0 0 1-2-2V7h16v12a2 2 0 0 1-2 2H6Z"></path>
+                </svg>
+              </button>
+              <button
+                mat-button
+                type="button"
+                class="icon-action-button"
+                (click)="save()"
+                [disabled]="isSelectedDraftLocked()"
+                matTooltip="Save draft"
+                aria-label="Save draft"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 3h11l3 3v15H5V3Zm2 2v4h8V5H7Zm0 14h10V11H7v8Zm2-6h6v4H9v-4Z"></path>
+                </svg>
+              </button>
+              <button
+                mat-button
+                type="button"
+                class="icon-action-button"
+                (click)="regenerate()"
+                matTooltip="Regenerate run"
+                aria-label="Regenerate run"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 6V3L8 7l4 4V8c2.76 0 5 2.24 5 5 0 1.01-.3 1.95-.82 2.74l1.46 1.46A6.96 6.96 0 0 0 19 13c0-3.87-3.13-7-7-7Zm-5.18.26L5.36 7.72A6.96 6.96 0 0 0 5 11c0 3.87 3.13 7 7 7v3l4-4-4-4v3c-2.76 0-5-2.24-5-5 0-1.01.3-1.95.82-2.74Z"></path>
+                </svg>
+              </button>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <form [formGroup]="form" class="case-stack">
+          @for (caseGroup of caseArray.controls; track caseGroup; let index = $index) {
+            <div class="case-slot" [class.case-slot--muted]="caseIsCoverageMuted(index)">
+              <button
+                mat-stroked-button
+                type="button"
+                class="inline-add-case"
+                [class.inline-add-case--top]="index === 0"
+                (click)="addCase(index)"
+                [disabled]="isSelectedDraftLocked()"
+              >
+              <div class="inline-add-case__icon" aria-hidden="true"><span class="add-icon">+</span></div>
+                
+                <span>Add Test Case</span>
+              </button>
+
+              <mat-card
+                class="surface-card case-card"
+                [class.selected-case]="isCaseExpanded(index)"
+                [class.case-card--busy]="isCaseBusy(index)"
+                [formGroup]="getCaseGroup(index)"
+                [attr.data-case-card-index]="index"
+              >
+                @if (isCaseBusy(index)) {
+                  <div class="case-busy-overlay" aria-live="polite">
+                    <mat-spinner diameter="24" strokeWidth="3" class="action-spinner action-spinner--overlay"></mat-spinner>
+                    <span>{{ caseBusyLabel(index) }}</span>
+                  </div>
+                }
+                <mat-card-content class="card-stack">
+                  @if (isCaseExpanded(index)) {
+                    <div class="expanded-case" @caseContentTransition>
+                      <div class="case-header expanded-header">
+                        <div class="case-header-copy">
+                          <div class="case-topline">
+                            <span class="case-id">{{ getCaseGroup(index).get('caseId')?.value || ('Case ' + (index + 1)) }}</span>
+                            <div class="pill-row">
+                              @for (pill of casePills(index); track pill) {
+                                <span class="pill">{{ pill }}</span>
+                              }
+                            </div>
+                          </div>
+                          <mat-form-field
+                            appearance="outline"
+                            class="case-title-field jira-title-field"
+                          >
+                            <mat-label>Title</mat-label>
+                            <textarea
+                              matInput
+                              rows="2"
+                              maxlength="500"
+                              cdkTextareaAutosize
+                              cdkAutosizeMinRows="2"
+                              cdkAutosizeMaxRows="16"
+                              formControlName="title"
+                            ></textarea>
+                          </mat-form-field>
+                        </div>
+
+                        <div class="case-header-actions">
+                          <div class="case-status-row">
+                            <app-status-badge
+                              [status]="getCaseGroup(index).get('reviewStatus')?.value || 'pending'"
+                              [label]="getCaseGroup(index).get('reviewStatus')?.value || 'pending'"
+                            ></app-status-badge>
+                            @if (!isCasePersisted(index)) {
+                              <button
+                                mat-flat-button
+                              type="button"
+                              class="case-save-button"
+                              (click)="saveCase(index)"
+                              [disabled]="isSelectedDraftLocked() || caseSavingIndex() === index || !hasValidCaseTitle(index)"
+                            >
+                                @if (isCaseSaveBusy(index)) {
+                                  <mat-spinner diameter="16" strokeWidth="3" class="action-spinner action-spinner--inline"></mat-spinner>
+                                }
+                                {{ isCaseSaveBusy(index) ? 'Saving...' : 'Save' }}
+                              </button>
+                            }
+                          </div>
+                          <div class="case-inline-actions">
+                            <button
+                              mat-button
+                              type="button"
+                              class="icon-action-button case-action-button danger-icon"
+                              (click)="removeCase(index)"
+                              [disabled]="isSelectedDraftLocked() || isCaseBusy(index)"
+                              matTooltip="Delete test case"
+                              aria-label="Delete test case"
+                            >
+                              @if (isCaseDeleteBusy(index)) {
+                                <mat-spinner diameter="16" strokeWidth="3" class="action-spinner action-spinner--inline"></mat-spinner>
+                              } @else {
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                  <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm1 6h2v8h-2V9Zm4 0h2v8h-2V9ZM7 9h2v8H7V9Zm-1 12a2 2 0 0 1-2-2V7h16v12a2 2 0 0 1-2 2H6Z"></path>
+                                </svg>
+                              }
+                            </button>
+                            <button
+                              mat-button
+                              type="button"
+                              class="icon-action-button case-action-button case-review-button approve-review-button"
+                              (click)="approveCase(index)"
+                              [disabled]="isSelectedDraftLocked() || !canReviewCase(index) || isCaseBusy(index)"
+                              matTooltip="Approve testcase"
+                              aria-label="Approve testcase"
+                            >
+                              @if (isCaseApproveBusy(index)) {
+                                <mat-spinner diameter="16" strokeWidth="3" class="action-spinner action-spinner--inline"></mat-spinner>
+                              } @else {
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                  <path d="M12 2a10 10 0 1 0 10 10A10.01 10.01 0 0 0 12 2Zm-1.1 14.3L6.6 12l1.4-1.4 2.9 2.89 5.1-5.09 1.4 1.4Z"></path>
+                                </svg>
+                              }
+                            </button>
+                            <button
+                              mat-button
+                              type="button"
+                              class="icon-action-button case-action-button case-review-button reject-review-button"
+                              (click)="openRejectEditor(index)"
+                              [disabled]="isSelectedDraftLocked() || !canReviewCase(index) || isCaseBusy(index)"
+                              matTooltip="Reject testcase"
+                              aria-label="Reject testcase"
+                            >
+                              @if (isCaseRejectBusy(index)) {
+                                <mat-spinner diameter="16" strokeWidth="3" class="action-spinner action-spinner--inline"></mat-spinner>
+                              } @else {
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                  <path d="M12 2a10 10 0 1 0 10 10A10.01 10.01 0 0 0 12 2Zm4.3 12.89-1.41 1.41L12 13.41 9.11 16.3 7.7 14.89 10.59 12 7.7 9.11 9.11 7.7 12 10.59 14.89 7.7l1.41 1.41L13.41 12Z"></path>
+                                </svg>
+                              }
+                            </button>
+                            <button
+                              mat-button
+                              type="button"
+                              class="icon-action-button case-action-button"
+                              (click)="selectCase(index)"
+                              [disabled]="isCaseBusy(index)"
+                              matTooltip="Collapse test case"
+                              aria-label="Collapse test case"
+                            >
+                              <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M7.41 15.59 12 11l4.59 4.59L18 14.17l-6-6-6 6z"></path>
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="case-detail-panel" @caseDetailTransition>
+                        <div class="case-meta-grid">
+                          <mat-form-field appearance="outline" floatLabel="always"><mat-label>Case ID</mat-label><input matInput formControlName="caseId" /></mat-form-field>
+                          <mat-form-field appearance="outline" floatLabel="always"><mat-label>Review status</mat-label><input matInput formControlName="reviewStatus" readonly /></mat-form-field>
+                          <mat-form-field appearance="outline" floatLabel="always"><mat-label>Feature</mat-label><input matInput formControlName="feature" /></mat-form-field>
+                          <mat-form-field appearance="outline" floatLabel="always"><mat-label>Scenario</mat-label><input matInput formControlName="scenario" /></mat-form-field>
+                          <mat-form-field appearance="outline" floatLabel="always"><mat-label>Test Type</mat-label><input matInput formControlName="testType" /></mat-form-field>
+                          <mat-form-field appearance="outline" floatLabel="always"><mat-label>Severity</mat-label><input matInput formControlName="severity" /></mat-form-field>
+                          <mat-form-field appearance="outline" floatLabel="always">
+                            <mat-label>Automation Candidate</mat-label>
+                            <mat-select formControlName="automationCandidate">
+                              <mat-option [value]="true">Yes</mat-option>
+                              <mat-option [value]="false">No</mat-option>
+                            </mat-select>
+                          </mat-form-field>
+                          <mat-form-field appearance="outline" floatLabel="always">
+                            <mat-label>Linked Taxonomy</mat-label>
+                            <textarea matInput rows="1" formControlName="linkedTaxonomy"></textarea>
+                          </mat-form-field>
+                          <mat-form-field appearance="outline" floatLabel="always" class="full-span"><mat-label>Description</mat-label><textarea matInput rows="3" formControlName="objective"></textarea></mat-form-field>
+                          <mat-form-field appearance="outline" floatLabel="always" class="full-span"><mat-label>Notes</mat-label><textarea matInput rows="2" formControlName="notes"></textarea></mat-form-field>
+                          <mat-form-field appearance="outline" floatLabel="always"><mat-label>Preconditions</mat-label><textarea matInput rows="2" formControlName="preconditions"></textarea></mat-form-field>
+                          <mat-form-field appearance="outline" floatLabel="always"><mat-label>Test Data</mat-label><textarea matInput rows="2" formControlName="testData"></textarea></mat-form-field>
+                        </div>
+
+                        @if (false) {
+                          <section class="review-feedback-panel">
+                          <div class="review-feedback-panel__header">
+                            <div>
+                              <p class="section-kicker">Structured review feedback</p>
+                              <strong>{{ caseFeedbackLabel(index) }}</strong>
+                            </div>
+                            @if (latestCaseFeedback(index); as feedback) {
+                              <span class="feedback-timestamp">{{ feedback!.createdAt | date: 'medium' }}</span>
+                            }
+                          </div>
+
+                          @if (latestCaseFeedback(index); as feedback) {
+                            <div class="feedback-snapshot">
+                              @if (feedback!.reasonCode) {
+                                <span class="feedback-badge">{{ caseFeedbackLabel(index) }}</span>
+                              }
+                              @if (feedback!.reasonDetails) {
+                                <p><strong>Issue:</strong> {{ feedback!.reasonDetails }}</p>
+                              }
+                              @if (feedback!.replacementSummary) {
+                                <p><strong>Expected instead:</strong> {{ feedback!.replacementSummary }}</p>
+                              }
+                              @if (feedback!.reviewerNotes) {
+                                <p><strong>Reviewer note:</strong> {{ feedback!.reviewerNotes }}</p>
+                              }
+                            </div>
+                          } @else {
+                            <p class="muted-copy">Approvals and rejections recorded here become safe learning signals for later refinement.</p>
+                          }
+
+                          @if (hasRejectEditorOpen(index)) {
+                            <div class="reject-editor">
+                              <mat-form-field appearance="outline">
+                                <mat-label>Rejection reason</mat-label>
+                                <mat-select [formControl]="getCaseGroup(index).get('feedbackReasonCode')">
+                                  @for (reason of rejectionReasonOptions; track reason.value) {
+                                    <mat-option [value]="reason.value">{{ reason.label }}</mat-option>
+                                  }
+                                </mat-select>
+                              </mat-form-field>
+                              <mat-form-field appearance="outline">
+                                <mat-label>What was wrong</mat-label>
+                                <textarea matInput rows="2" [formControl]="getCaseGroup(index).get('feedbackReasonDetails')"></textarea>
+                              </mat-form-field>
+                              <mat-form-field appearance="outline" class="full-span">
+                                <mat-label>What should have happened instead</mat-label>
+                                <textarea matInput rows="2" [formControl]="getCaseGroup(index).get('replacementSummary')"></textarea>
+                              </mat-form-field>
+                              <mat-form-field appearance="outline" class="full-span">
+                                <mat-label>Reviewer note</mat-label>
+                                <textarea matInput rows="2" [formControl]="getCaseGroup(index).get('feedbackReviewerNotes')"></textarea>
+                              </mat-form-field>
+                              <div class="reject-editor__actions">
+                                <button
+                                  mat-flat-button
+                                  color="warn"
+                                  type="button"
+                                  (click)="submitRejectCase(index)"
+                                  [disabled]="caseReviewActionIndex() === index"
+                                >
+                                  {{ caseReviewActionIndex() === index ? 'Saving rejection…' : 'Save rejection' }}
+                                </button>
+                                <button mat-button type="button" (click)="closeRejectEditor(index)" [disabled]="caseReviewActionIndex() === index">
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          } @else {
+                            <div class="review-feedback-panel__actions">
+                              <button
+                                mat-stroked-button
+                                type="button"
+                                (click)="openRejectEditor(index)"
+                                [disabled]="!canReviewCase(index) || caseReviewActionIndex() === index"
+                              >
+                                Record structured rejection
+                              </button>
+                            </div>
+                          }
+                          </section>
+                        }
+
+                        <div class="step-table">
+                          <div class="step-table-head">
+                            <span>Step</span>
+                            <span>Action</span>
+                          </div>
+
+                          <div formArrayName="steps" class="step-table-body">
+                            @for (stepGroup of getStepsForCase(index).controls; track $index) {
+                              <div class="step-row" [formGroupName]="$index">
+                                <div class="step-index">{{ $index + 1 }}</div>
+                                <mat-form-field appearance="outline">
+                                  <mat-label>Action</mat-label>
+                                  <textarea matInput rows="2" formControlName="action"></textarea>
+                                </mat-form-field>
+                                <button
+                                  mat-button
+                                  type="button"
+                                  class="danger-text step-delete"
+                                  (click)="removeStep(index, $index)"
+                                  [disabled]="isSelectedDraftLocked()"
+                                >
+                                  Delete step
+                                </button>
+                              </div>
+                            }
+                          </div>
+
+                          <div class="step-footer">
+                            <button mat-button type="button" (click)="addStep(index)" [disabled]="isSelectedDraftLocked()">Add Step</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  } @else {
+                    <button class="case-toggle" type="button" @caseContentTransition (click)="selectCase(index)">
+                      <div class="case-header">
+                        <div class="case-header-copy">
+                          <div class="case-topline">
+                            <span class="case-id">{{ getCaseGroup(index).get('caseId')?.value || ('Case ' + (index + 1)) }}</span>
+                            <div class="pill-row">
+                              @for (pill of casePills(index); track pill) {
+                                <span class="pill">{{ pill }}</span>
+                              }
+                            </div>
+                          </div>
+                          <h4 [matTooltip]="fullCaseTitle(index)" matTooltipClass="full-title-tooltip">{{ displayCaseTitle(index) }}</h4>
+                          <p>{{ casePreview(index) }}</p>
+                        </div>
+
+                        <div class="compact-case-actions">
+                          <app-status-badge
+                            [status]="getCaseGroup(index).get('reviewStatus')?.value || 'pending'"
+                            [label]="getCaseGroup(index).get('reviewStatus')?.value || 'pending'"
+                          ></app-status-badge>
+                          <span class="accordion-arrow" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                              <path d="M7.41 8.41 12 13l4.59-4.59L18 9.83l-6 6-6-6z"></path>
+                            </svg>
+                          </span>
+                        </div>
+                      </div>
+                    </button>
+                  }
+                </mat-card-content>
+              </mat-card>
+            </div>
+          }
+          <button
+            mat-stroked-button
+            type="button"
+            class="inline-add-case inline-add-case--tail"
+            (click)="addCase(caseArray.length)"
+            [disabled]="isSelectedDraftLocked()"
+          >
+            <div class="inline-add-case__icon" aria-hidden="true"><span class="add-icon">+</span></div>
+            <span>Add Test Case</span>
+          </button>
+        </form>
+      </section>
+    </section>
+  }
+</section>

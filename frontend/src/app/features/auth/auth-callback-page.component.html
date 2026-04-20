@@ -1,0 +1,10 @@
+<section class="callback-shell">
+  <mat-card class="callback-card">
+    <mat-progress-spinner diameter="48" mode="indeterminate" />
+    <h1>Completing Microsoft sign-in</h1>
+    <p>Validating your QAlibre account and loading your access profile.</p>
+    @if (error()) {
+      <div class="callback-error" role="alert">{{ error() }}</div>
+    }
+  </mat-card>
+</section>

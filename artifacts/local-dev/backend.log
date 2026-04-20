@@ -1,0 +1,108 @@
+
+> qa-dataset-workbench-backend@1.0.0 dev
+> tsx watch src/server.ts
+
+[2026-04-13 22:08:16.162 +0530] [32mINFO[39m: [36mServer listening at http://127.0.0.1:3000[39m
+[2026-04-13 22:08:16.164 +0530] [32mINFO[39m: [36mServer listening at http://192.168.1.5:3000[39m
+[2026-04-13 22:08:16.164 +0530] [32mINFO[39m: [36mServer listening at http://172.17.208.1:3000[39m
+[2026-04-13 22:08:16.164 +0530] [32mINFO[39m: [36mServer listening at http://172.21.160.1:3000[39m
+[2026-04-13 22:08:53.509 +0530] [32mINFO[39m: [36mincoming request[39m
+    [35mreqId[39m: "req-1"
+    [35mreq[39m: {
+      "method": "POST",
+      "url": "/api/admin/modules",
+      "host": "localhost:3000",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 57219
+    }
+[2026-04-13 22:08:53.524 +0530] [31mERROR[39m: [36mRequest failed[39m
+    [35mreqId[39m: "req-1"
+    [35mcorrelationId[39m: "req-1"
+    err: {
+      "type": "Error",
+      "message": "body/projectId Invalid input: expected string, received undefined, body/name Invalid input: expected string, received undefined",
+      "stack":
+          Error: body/projectId Invalid input: expected string, received undefined, body/name Invalid input: expected string, received undefined
+              at defaultSchemaErrorFormatter (C:\Users\Khyati\VS_Code_Projects\qa-assistant\node_modules\fastify\lib\context.js:95:10)
+              at wrapValidationError (C:\Users\Khyati\VS_Code_Projects\qa-assistant\node_modules\fastify\lib\validation.js:257:17)
+              at validate (C:\Users\Khyati\VS_Code_Projects\qa-assistant\node_modules\fastify\lib\validation.js:175:16)
+              at preValidationCallback (C:\Users\Khyati\VS_Code_Projects\qa-assistant\node_modules\fastify\lib\handle-request.js:94:25)
+              at handler (C:\Users\Khyati\VS_Code_Projects\qa-assistant\node_modules\fastify\lib\handle-request.js:78:7)
+              at onDone (C:\Users\Khyati\VS_Code_Projects\qa-assistant\node_modules\fastify\lib\content-type-parser.js:229:5)
+              at AsyncResource.runInAsyncScope (node:async_hooks:214:14)
+              at bound (node:async_hooks:245:16)
+              at Parser.defaultJsonParser [as fn] (C:\Users\Khyati\VS_Code_Projects\qa-assistant\node_modules\fastify\lib\content-type-parser.js:317:7)
+              at IncomingMessage.onEnd (C:\Users\Khyati\VS_Code_Projects\qa-assistant\node_modules\fastify\lib\content-type-parser.js:299:27)
+              at IncomingMessage.emit (node:events:519:28)
+              at endReadableNT (node:internal/streams/readable:1698:12)
+              at process.processTicksAndRejections (node:internal/process/task_queues:89:21)
+      "statusCode": 400,
+      "code": "FST_ERR_VALIDATION",
+      "validation": [
+        {
+          "keyword": "invalid_type",
+          "instancePath": "/projectId",
+          "schemaPath": "#/projectId/invalid_type",
+          "message": "Invalid input: expected string, received undefined",
+          "params": {
+            "expected": "string"
+          }
+        },
+        {
+          "keyword": "invalid_type",
+          "instancePath": "/name",
+          "schemaPath": "#/name/invalid_type",
+          "message": "Invalid input: expected string, received undefined",
+          "params": {
+            "expected": "string"
+          }
+        }
+      ],
+      "validationContext": "body"
+    }
+[2026-04-13 22:08:53.540 +0530] [32mINFO[39m: [36mrequest completed[39m
+    [35mreqId[39m: "req-1"
+    [35mres[39m: {
+      "statusCode": 400
+    }
+    [35mresponseTime[39m: 29.626100063323975
+[2026-04-13 22:08:53.543 +0530] [32mINFO[39m: [36mincoming request[39m
+    [35mreqId[39m: "req-2"
+    [35mreq[39m: {
+      "method": "DELETE",
+      "url": "/api/admin/projects/cmnx656uc0002o25kju9uf0ir",
+      "host": "localhost:3000",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 57220
+    }
+[2026-04-13 22:08:53.546 +0530] [31mERROR[39m: [36mRequest failed[39m
+    [35mreqId[39m: "req-2"
+    [35mcorrelationId[39m: "req-2"
+    err: {
+      "type": "AppError",
+      "message": "Authentication required.",
+      "stack":
+          AppError: Authentication required.
+              at unauthorized (C:\Users\Khyati\VS_Code_Projects\qa-assistant\backend\src\lib\errors.ts:19:3)
+              at Object.<anonymous> (C:\Users\Khyati\VS_Code_Projects\qa-assistant\backend\src\app.ts:148:13)
+              at hookIterator (C:\Users\Khyati\VS_Code_Projects\qa-assistant\node_modules\fastify\lib\hooks.js:408:10)
+              at next (C:\Users\Khyati\VS_Code_Projects\qa-assistant\node_modules\fastify\lib\hooks.js:242:18)
+              at hookRunner (C:\Users\Khyati\VS_Code_Projects\qa-assistant\node_modules\fastify\lib\hooks.js:264:5)
+              at validationCompleted (C:\Users\Khyati\VS_Code_Projects\qa-assistant\node_modules\fastify\lib\handle-request.js:117:5)
+              at preValidationCallback (C:\Users\Khyati\VS_Code_Projects\qa-assistant\node_modules\fastify\lib\handle-request.js:101:5)
+              at handler (C:\Users\Khyati\VS_Code_Projects\qa-assistant\node_modules\fastify\lib\handle-request.js:78:7)
+              at Object.handleRequest (C:\Users\Khyati\VS_Code_Projects\qa-assistant\node_modules\fastify\lib\handle-request.js:46:9)
+              at runPreParsing (C:\Users\Khyati\VS_Code_Projects\qa-assistant\node_modules\fastify\lib\route.js:651:19)
+              at next (C:\Users\Khyati\VS_Code_Projects\qa-assistant\node_modules\fastify\lib\hooks.js:236:9)
+              at handleResolve (C:\Users\Khyati\VS_Code_Projects\qa-assistant\node_modules\fastify\lib\hooks.js:253:7)
+              at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+      "statusCode": 401,
+      "code": "UNAUTHORIZED",
+      "name": "AppError"
+    }
+[2026-04-13 22:08:53.556 +0530] [32mINFO[39m: [36mrequest completed[39m
+    [35mreqId[39m: "req-2"
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 12.087800025939941

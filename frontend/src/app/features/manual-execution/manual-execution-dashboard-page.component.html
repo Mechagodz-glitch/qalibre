@@ -1,0 +1,341 @@
+<section class="manual-execution-dashboard">
+  @if (loading()) {
+    <section class="centered-state">
+      <mat-spinner diameter="42"></mat-spinner>
+    </section>
+  } @else {
+    <section class="filter-strip">
+      <mat-form-field appearance="outline">
+        <mat-label>Project</mat-label>
+        <mat-select
+          panelClass="dashboard-select-panel"
+          [value]="projectFilter()"
+          (valueChange)="setProjectFilter($event)"
+        >
+          <mat-option value="all">All projects</mat-option>
+          @for (project of dashboardProjects(); track project.id) {
+            <mat-option [value]="project.id">{{ project.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>QA Engineer</mat-label>
+        <mat-select
+          panelClass="dashboard-select-panel"
+          [value]="qaEngineerFilter()"
+          (valueChange)="setQaEngineerFilter($event)"
+        >
+          <mat-option value="all">All QA engineers</mat-option>
+          @for (engineer of qaEngineerOptions(); track engineer) {
+            <mat-option [value]="engineer">{{ engineer }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Date</mat-label>
+        <mat-select
+          panelClass="dashboard-select-panel"
+          [value]="dateFilter()"
+          (valueChange)="setDateFilter($event)"
+        >
+          @for (option of dateFilterOptions; track option.value) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <div class="filter-actions">
+        <button
+          mat-stroked-button
+          class="dashboard-create-button"
+          type="button"
+          (click)="openCreatePage()"
+        >
+          <span class="dashboard-action-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M11 5h2v14h-2zM5 11h14v2H5z"></path>
+            </svg>
+          </span>
+          Create Test Run
+        </button>
+        <button
+          mat-flat-button
+          class="dashboard-execute-button"
+          type="button"
+          (click)="openExecutionPage()"
+        >
+          <span class="dashboard-action-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="m8 5 11 7-11 7V5Z"></path>
+            </svg>
+          </span>
+          Execute Test Run
+        </button>
+      </div>
+    </section>
+
+    <section class="metric-grid">
+      <mat-card class="metric-card metric-card--sky">
+        <mat-card-content>
+          <span>Approved Suites</span>
+          <strong>{{ dashboardMetrics().approvedSuites }}</strong>
+          <p>Approved scope ready for manual execution</p>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="metric-card metric-card--mint">
+        <mat-card-content>
+          <span>In Progress Runs</span>
+          <strong>{{ dashboardMetrics().inProgressRuns }}</strong>
+          <p>Runs still waiting on testcase updates</p>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="metric-card metric-card--rose">
+        <mat-card-content>
+          <span>Completed Runs</span>
+          <strong>{{ dashboardMetrics().completedRuns }}</strong>
+          <p>Closed runs with completed reporting</p>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="metric-card metric-card--slate">
+        <mat-card-content>
+          <span>Executed Cases</span>
+          <strong>{{ dashboardMetrics().executedCases }}</strong>
+          <p>Case results already moved out of untested</p>
+        </mat-card-content>
+      </mat-card>
+    </section>
+
+    <section class="visual-grid">
+      <mat-card class="surface-card surface-card--sky chart-card chart-card--donut">
+        <mat-card-content class="chart-card__content">
+          <div class="chart-card__header">
+            <div>
+              <p class="section-eyebrow">Run status</p>
+              <h2>Pipeline split</h2>
+            </div>
+          </div>
+
+          <div class="donut-block">
+            <div class="donut-chart" [style.background]="runStatusGradient()">
+              <div class="donut-chart__center">
+                <strong>{{ filteredRuns().length }}</strong>
+                <span>runs</span>
+              </div>
+            </div>
+
+            <div class="donut-legend">
+              @for (segment of runStatusBreakdown(); track segment.label) {
+                <div class="legend-row">
+                  <span class="legend-swatch" [style.background]="segment.color"></span>
+                  <div>
+                    <strong>{{ segment.label }}</strong>
+                    <span>{{ segment.value }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="surface-card surface-card--warm chart-card chart-card--donut">
+        <mat-card-content class="chart-card__content">
+          <div class="chart-card__header">
+            <div>
+              <p class="section-eyebrow">Execution outcomes</p>
+              <h2>Result mix</h2>
+            </div>
+          </div>
+
+          <div class="donut-block">
+            <div class="donut-chart" [style.background]="executionOutcomeGradient()">
+              <div class="donut-chart__center">
+                <strong>{{ dashboardMetrics().executedCases }}</strong>
+                <span>executed</span>
+              </div>
+            </div>
+
+            <div class="donut-legend">
+              @for (segment of executionOutcomeBreakdown(); track segment.label) {
+                <div class="legend-row">
+                  <span class="legend-swatch" [style.background]="segment.color"></span>
+                  <div>
+                    <strong>{{ segment.label }}</strong>
+                    <span>{{ segment.value }} cases</span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </section>
+
+    <section class="workspace-grid">
+      <mat-card class="surface-card surface-card--warm report-gallery-card">
+        <mat-card-content class="report-gallery-card__content">
+          <div class="card-head">
+            <div>
+              <p class="section-eyebrow">Completed reports</p>
+              <h2>Executed run reports</h2>
+            </div>
+          </div>
+
+          @if (!completedReportRuns().length) {
+            <app-empty-state
+              title="No completed reports yet"
+              description="Completed runs will appear here with direct report access."
+            />
+          } @else {
+            <div class="report-list">
+              @for (run of completedReportRuns(); track run.id) {
+                <article class="report-run-card">
+                  <div class="report-run-card__topline">
+                    <div class="report-run-card__headline">
+                      <strong>{{ run.name }}</strong>
+                      <span>
+                        @if (formatRunLocation(run)) {
+                          {{ formatRunLocation(run) }}
+                        } @else {
+                          Project-level execution run
+                        }
+                      </span>
+                    </div>
+                    <app-status-badge
+                      [status]="statusTone(run.status)"
+                      [label]="statusLabel(run.status)"
+                    ></app-status-badge>
+                  </div>
+
+                  <div class="report-run-card__meta">
+                    <span class="report-run-card__project">{{ run.project.name }}</span>
+                    <span>{{ run.totals.total }} cases</span>
+                    <span>Completed {{ formatDate(run.completedAt) }}</span>
+                  </div>
+
+                  <div class="report-run-card__progress-row">
+                    <div class="report-run-card__progress">
+                      <div class="stacked-bar">
+                        <span
+                          class="passed"
+                          [style.width.%]="run.totals.total ? (run.totals.passed / run.totals.total) * 100 : 0"
+                        ></span>
+                        <span
+                          class="failed"
+                          [style.width.%]="run.totals.total ? (run.totals.failed / run.totals.total) * 100 : 0"
+                        ></span>
+                        <span
+                          class="skipped"
+                          [style.width.%]="run.totals.total ? (run.totals.skipped / run.totals.total) * 100 : 0"
+                        ></span>
+                        <span
+                          class="untested"
+                          [style.width.%]="run.totals.total ? (run.totals.untested / run.totals.total) * 100 : 0"
+                        ></span>
+                      </div>
+
+                      <div class="run-card__totals">
+                        <span class="success">{{ run.totals.passed }} passed</span>
+                        <span class="danger">{{ run.totals.failed }} failed</span>
+                        <span class="warning">{{ run.totals.skipped }} skipped</span>
+                      </div>
+                    </div>
+
+                    <button
+                      mat-stroked-button
+                      type="button"
+                      class="report-run-card__action"
+                      (click)="openReport(run.id)"
+                    >
+                      View Report
+                    </button>
+                  </div>
+                </article>
+              }
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="surface-card surface-card--sky comparison-card">
+        <mat-card-content class="comparison-card__content">
+          <div class="card-head comparison-card__head">
+            <div>
+              <p class="section-eyebrow">Project comparison</p>
+              <h2>
+                @if (projectFilter() === 'all') {
+                  Passed vs failed by project
+                } @else {
+                  Iteration results by page
+                }
+              </h2>
+            </div>
+          </div>
+
+          <div class="comparison-legend" aria-hidden="true">
+            <span class="comparison-legend__item comparison-legend__item--passed">Passed</span>
+            <span class="comparison-legend__item comparison-legend__item--failed">Failed</span>
+          </div>
+
+          @if (!projectComparisonRows().length) {
+            <app-empty-state
+              title="No comparison data for this scope"
+              description="Passed and failed results will appear here once the filtered runs contain executed cases."
+            />
+          } @else {
+            <div class="comparison-list">
+              @for (row of projectComparisonRows(); track row.id) {
+                <article class="comparison-row">
+                  <div class="comparison-row__head">
+                    <div>
+                      <strong>{{ row.primaryLabel }}</strong>
+                      <span>{{ row.secondaryLabel }}</span>
+                    </div>
+                    <span class="comparison-row__total">{{ row.totalLabel }}</span>
+                  </div>
+
+                  <div class="comparison-row__bars">
+                    <div class="comparison-track">
+                      <div
+                        class="comparison-stack"
+                        [style.width.%]="projectComparisonStackWidth(row.total)"
+                      >
+                        @if (row.passed) {
+                          <div
+                            class="comparison-segment comparison-segment--passed"
+                            [style.width.%]="projectComparisonSegmentWidth(row.passed, row.total)"
+                            [matTooltip]="projectComparisonTooltip(row, 'passed')"
+                            matTooltipPosition="above"
+                          ></div>
+                        }
+                        @if (row.failed) {
+                          <div
+                            class="comparison-segment comparison-segment--failed"
+                            [style.width.%]="projectComparisonSegmentWidth(row.failed, row.total)"
+                            [matTooltip]="projectComparisonTooltip(row, 'failed')"
+                            matTooltipPosition="above"
+                          ></div>
+                        }
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="comparison-row__counts">
+                    <span class="comparison-count comparison-count--passed">{{ row.passed }} passed</span>
+                    <span class="comparison-count comparison-count--failed">{{ row.failed }} failed</span>
+                  </div>
+                </article>
+              }
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+    </section>
+
+  }
+</section>

@@ -1,0 +1,170 @@
+{
+  "recordType": "companyDashboardQaContext",
+  "company": {
+    "name": "Detect Technologies",
+    "website": "https://detecttechnologies.com/",
+    "primaryPlatform": "T-Pulse",
+    "industryFocus": [
+      "industrial safety automation",
+      "industrial operations monitoring",
+      "industrial inspections",
+      "industrial security and surveillance"
+    ],
+    "qaRelevance": "The QA team primarily validates the functional behavior of industrial dashboards that aggregate AI detections, operational metrics, compliance signals, and zone-based drilldowns."
+  },
+  "productContext": {
+    "overview": "Detect Technologies positions T-Pulse as a unified industrial AI platform that brings multiple industrial functions onto a single operational dashboard surface. The platform emphasizes real-time monitoring, risk reduction, compliance visibility, and decision support across safety, operations, inspections, and security.",
+    "dashboardFamilies": [
+      {
+        "name": "Workplace Safety Dashboards",
+        "focusAreas": [
+          "unsafe acts and unsafe conditions",
+          "red-zone monitoring",
+          "worker health and environment risk visibility",
+          "incident and violation tracking",
+          "corrective action visibility"
+        ],
+        "commonWidgets": [
+          "KPI summary cards",
+          "zone-wise risk splits",
+          "alert and violation lists",
+          "trend charts",
+          "evidence-linked detail views"
+        ]
+      },
+      {
+        "name": "Workplace Operations Dashboards",
+        "focusAreas": [
+          "progress and schedule tracking",
+          "occupancy and manpower visibility",
+          "inventory and resource tracking",
+          "equipment and workforce productivity"
+        ],
+        "commonWidgets": [
+          "planned vs actual metrics",
+          "trend charts",
+          "zone comparisons",
+          "filters by site, zone, and date"
+        ]
+      },
+      {
+        "name": "Workplace Inspections Dashboards",
+        "focusAreas": [
+          "asset condition",
+          "predictive maintenance",
+          "remote inspection insights",
+          "equipment and infrastructure anomaly visibility"
+        ],
+        "commonWidgets": [
+          "inspection status tiles",
+          "maintenance indicators",
+          "fault or anomaly lists",
+          "history and recommendation views"
+        ]
+      },
+      {
+        "name": "Workplace Security Dashboards",
+        "focusAreas": [
+          "intrusion detection",
+          "perimeter monitoring",
+          "patrolling visibility",
+          "unauthorized access alerts"
+        ],
+        "commonWidgets": [
+          "live alert summaries",
+          "event timelines",
+          "evidence previews",
+          "severity-driven triage panels"
+        ]
+      }
+    ]
+  },
+  "functionalQaGuidance": {
+    "highValueFunctionalThemes": [
+      "shared filter propagation across all widgets",
+      "date and date-range refresh correctness",
+      "zone-based scope retention and drilldown carryover",
+      "KPI, chart, and detail-list numerical consistency",
+      "alert creation, acknowledgement, escalation, and closure behavior",
+      "evidence traceability from summary cards to images, snapshots, or media records",
+      "permit or compliance workflow state consistency where applicable",
+      "planned vs actual operational metric integrity",
+      "empty-state and partial-data handling",
+      "performance and stability for multi-widget dashboard refreshes"
+    ],
+    "dashboardInteractionPatternsToTest": [
+      "clicking chart segments opens the correct scoped detail view",
+      "zone color mapping remains consistent across cards and charts",
+      "hover states and tooltips expose accurate date/category/value context",
+      "shared filters update both top-level KPIs and deeper charts without stale data",
+      "drilldowns preserve selected site, zone, and date context",
+      "summary indicators match the underlying detailed records"
+    ],
+    "industrialEdgeCases": [
+      "camera or sensor offline states",
+      "delayed ingestion for the latest date",
+      "duplicate or repeated alerts",
+      "zones with no data",
+      "partially processed cumulative date ranges",
+      "evidence available for some records but not others"
+    ]
+  },
+  "curationGuidance": {
+    "suggestedTags": [
+      "detect-technologies",
+      "t-pulse",
+      "industrial-ai",
+      "industrial-safety",
+      "industrial-operations",
+      "inspection-dashboard",
+      "security-dashboard",
+      "dashboard-qa",
+      "functional-testing",
+      "zone-monitoring"
+    ],
+    "recommendedFeatureTypes": [
+      "Safety Portal Dashboard KPI Monitoring",
+      "Safety Portal Dashboard Trend Analysis",
+      "Safety Portal Shared Filtering",
+      "Dashboard Analytics"
+    ],
+    "recommendedRulePacks": [
+      "Shared Filtering And Scope Control",
+      "Dashboard KPI Cards And Segregation Drilldowns",
+      "Dashboard Trend Visualization Tabs",
+      "Analytics Visualization And Hierarchical Data"
+    ]
+  },
+  "sources": [
+    {
+      "url": "https://detecttechnologies.com/",
+      "relevance": "Company website and high-level product positioning."
+    },
+    {
+      "url": "https://detecttechnologies.com/wp-content/uploads/2021/08/Brochure-test.pdf",
+      "relevance": "Official T-Pulse brochure describing modules, capabilities, and industrial dashboard use cases."
+    },
+    {
+      "url": "https://detecttechnologies.com/workplace-safety/",
+      "relevance": "Official workplace safety solution page."
+    },
+    {
+      "url": "https://detecttechnologies.com/workplace-operations/",
+      "relevance": "Official workplace operations solution page."
+    },
+    {
+      "url": "https://detecttechnologies.com/workplace-inspections/",
+      "relevance": "Official workplace inspections solution page."
+    },
+    {
+      "url": "https://detecttechnologies.com/workplace-security/",
+      "relevance": "Official workplace security solution page."
+    }
+  ],
+  "notes": [
+    "This record is intended to improve test case curation for dashboard-heavy industrial products rather than to define strict product requirements.",
+    "Some dashboard characteristics are inferred from official solution positioning and T-Pulse brochure content, then translated into QA-oriented functional guidance."
+  ],
+  "createdAt": "2026-03-28",
+  "createdBy": "Codex"
+}

@@ -1,0 +1,94 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: qa-dataset-workbench-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-qa_dataset_db}
+      POSTGRES_USER: ${POSTGRES_USER:-qa_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-qa_password}
+    ports:
+      - '${POSTGRES_HOST_PORT:-5433}:5432'
+    volumes:
+      - qa_dataset_workbench_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER:-qa_user} -d ${POSTGRES_DB:-qa_dataset_db}',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: qa-dataset-workbench-backend
+    restart: unless-stopped
+    init: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ./backend/.env
+    environment:
+      NODE_ENV: development
+      HOST: 0.0.0.0
+      PORT: 3000
+      CORS_ORIGIN: http://localhost:4200
+      DATABASE_URL: postgresql://${POSTGRES_USER:-qa_user}:${POSTGRES_PASSWORD:-qa_password}@postgres:5432/${POSTGRES_DB:-qa_dataset_db}?schema=public
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./backend:/app
+      - backend_node_modules:/app/node_modules
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/health').then((response) => { if (!response.ok) process.exit(1); }).catch(() => process.exit(1));",
+        ]
+      start_period: 45s
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: qa-dataset-workbench-frontend
+    restart: unless-stopped
+    init: true
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      CHOKIDAR_USEPOLLING: 'true'
+      NG_PROXY_TARGET: http://backend:3000
+    ports:
+      - '4200:4200'
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:4200').then((response) => { if (!response.ok) process.exit(1); }).catch(() => process.exit(1));",
+        ]
+      interval: 20s
+      timeout: 5s
+      retries: 15
+
+volumes:
+  qa_dataset_workbench_pgdata:
+  backend_node_modules:
+  frontend_node_modules:

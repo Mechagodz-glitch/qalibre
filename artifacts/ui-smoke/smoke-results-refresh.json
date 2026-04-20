@@ -1,0 +1,55 @@
+{
+  "generatorState": {
+    "hasHeroCard": true,
+    "hasLegacyMetricPills": false,
+    "heroText": "Test architecture workspaceTest GeneratorDefine scope and architectural parameters to synthesize high-fidelity automated test cases from sources, explicit feature asks, and curated QA knowledge."
+  },
+  "generationHistoryState": {
+    "hasHeroCard": true,
+    "refreshBackground": "linear-gradient(rgba(255, 239, 210, 0.96), rgba(255, 246, 227, 0.94))",
+    "createBackground": "linear-gradient(rgba(216, 247, 217, 0.95), rgba(234, 250, 232, 0.92))"
+  },
+  "dashboardState": {
+    "filterRowTops": [
+      94,
+      94,
+      94
+    ],
+    "createWidth": 180,
+    "executeWidth": 180,
+    "lowerCardWidths": [
+      527,
+      527
+    ],
+    "activityOverflow": "auto",
+    "activityMaxHeight": "165px",
+    "volumeOverflow": "auto",
+    "reportOverflow": null,
+    "metricRow": [
+      164,
+      164,
+      164,
+      164
+    ]
+  },
+  "testRunState": {
+    "metricRow": [
+      94,
+      94,
+      94,
+      94
+    ],
+    "filterWrapperBackground": "linear-gradient(rgba(251, 253, 255, 0.98), rgba(240, 247, 251, 0.94))",
+    "filterWrapperRadius": "12px"
+  },
+  "runPageState": {
+    "summaryRow": [
+      295,
+      295,
+      295,
+      295,
+      295
+    ],
+    "summaryCount": 5
+  }
+}

@@ -1,0 +1,453 @@
+<section class="manual-run-page">
+  @if (loading()) {
+    <section class="centered-state">
+      <mat-spinner diameter="42"></mat-spinner>
+    </section>
+  } @else if (!run()) {
+    <app-empty-state title="Run unavailable" description="The requested manual execution run could not be found." />
+  } @else {
+    <app-page-header
+      [title]="run()!.name"
+      eyebrow="Manual execution run"
+      [description]="'Execute each approved testcase, keep the run moving, and close it only when no case remains untested.'"
+    >
+      <button
+        mat-stroked-button
+        class="run-back-button"
+        type="button"
+        routerLink="/manual-execution/test-execution"
+      >
+        Back to Test Execution
+      </button>
+      @if (canViewReport()) {
+        <button
+          mat-stroked-button
+          class="run-report-button"
+          type="button"
+          [routerLink]="['/manual-execution/test-execution', run()!.id, 'report']"
+        >
+          View Report
+        </button>
+        <button mat-stroked-button class="run-export-button" type="button" (click)="exportWorkbook()">
+          Export Workbook
+        </button>
+      }
+      @if (run()!.status !== 'completed') {
+        <button
+          mat-flat-button
+          class="run-complete-button"
+          type="button"
+          [disabled]="!canComplete()"
+          (click)="completeRun()"
+        >
+          {{ completing() ? 'Completing...' : 'Complete Run' }}
+        </button>
+      }
+    </app-page-header>
+
+    @if (!canViewReport()) {
+      <section class="report-lock-banner">
+        <strong>Reports stay locked until the run is completed.</strong>
+        <span>Finish every testcase result first, then the report and workbook export actions will unlock.</span>
+      </section>
+    }
+
+    <section class="summary-grid">
+      <mat-card class="summary-card">
+        <mat-card-content>
+          <span>Run Status</span>
+          <strong>{{ run()!.totals.completionPercent }}%</strong>
+          <app-status-badge [status]="run()!.status" [label]="resultPillLabel(run()!.status)"></app-status-badge>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card">
+        <mat-card-content>
+          <span>Passed</span>
+          <strong>{{ run()!.totals.passed }}</strong>
+          <p>Executed successfully</p>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card failure-card">
+        <mat-card-content>
+          <span>Failed</span>
+          <strong>{{ run()!.totals.failed }}</strong>
+          <p>Need defect follow-up</p>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card warning-card">
+        <mat-card-content>
+          <span>Skipped</span>
+          <strong>{{ run()!.totals.skipped }}</strong>
+          <p>Deferred or blocked</p>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card neutral-card">
+        <mat-card-content>
+          <span>Untested</span>
+          <strong>{{ run()!.totals.untested }}</strong>
+          <p>Must reach zero before completion</p>
+        </mat-card-content>
+      </mat-card>
+    </section>
+
+    <section class="metadata-grid">
+      <mat-card class="metadata-card">
+        <mat-card-content>
+          <div class="metadata-card__header">
+            <div>
+              <p class="section-eyebrow">Run context</p>
+              <h2>{{ run()!.project.name }}</h2>
+              @if (formatScope(run()!)) {
+                <p class="metadata-scope">{{ formatScope(run()!) }}</p>
+              }
+            </div>
+            <app-status-badge [status]="run()!.status" [label]="resultPillLabel(run()!.status)"></app-status-badge>
+          </div>
+
+          <div class="metadata-grid__values">
+            <div>
+              <span>Module</span>
+              <strong>{{ run()!.module?.name || 'Mixed selection' }}</strong>
+            </div>
+            <div>
+              <span>Page</span>
+              <strong>{{ run()!.page?.name || 'Mixed selection' }}</strong>
+            </div>
+            <div>
+              <span>Feature</span>
+              <strong>{{ run()!.feature?.name || 'Mixed selection' }}</strong>
+            </div>
+            <div>
+              <span>Environment</span>
+              <strong>{{ run()!.environment || 'Not specified' }}</strong>
+            </div>
+            <div>
+              <span>Build</span>
+              <strong>{{ run()!.buildVersion || 'Not specified' }}</strong>
+            </div>
+            <div>
+              <span>Assigned Tester</span>
+              <strong>{{ run()!.assignedTester || 'Not assigned' }}</strong>
+            </div>
+            <div>
+              <span>Created</span>
+              <strong>{{ formatDate(run()!.createdAt) }}</strong>
+            </div>
+          </div>
+
+          @if (run()!.notes) {
+            <div class="metadata-note">
+              <span>Run notes</span>
+              <p>{{ run()!.notes }}</p>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="metadata-card">
+        <mat-card-content>
+          <div class="metadata-card__header">
+            <div>
+              <p class="section-eyebrow">Selected suites</p>
+              <h2>{{ run()!.suites.length }} suite{{ run()!.suites.length === 1 ? '' : 's' }}</h2>
+            </div>
+          </div>
+
+          <div class="suite-chip-list">
+            @for (suite of run()!.suites; track suite.id) {
+              <article class="suite-chip">
+                <strong>{{ suite.suiteTitle }}</strong>
+                <span>{{ suite.caseCount }} cases</span>
+                <small>{{ suite.suitePath || 'Unassigned suite path' }}</small>
+              </article>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </section>
+
+    <mat-card class="cases-card">
+      <mat-card-content class="cases-card__content">
+        <div class="cases-card__header">
+          <div>
+            <p class="section-eyebrow">Execution board</p>
+            <h2>Update testcase results</h2>
+            <p>Mark each testcase as passed, failed, or skipped. Comments and defect links are stored per testcase result.</p>
+          </div>
+        </div>
+
+        <section class="case-filter-strip">
+          <mat-form-field appearance="outline" class="search-field">
+            <mat-label>Search testcases</mat-label>
+            <input matInput [value]="searchTerm()" (input)="searchTerm.set($any($event.target).value)" placeholder="Search by title, feature, suite, or case id" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Status</mat-label>
+            <mat-select [value]="statusFilter()" (valueChange)="statusFilter.set($event)">
+              <mat-option value="all">All statuses</mat-option>
+              <mat-option value="untested">Untested</mat-option>
+              <mat-option value="passed">Passed</mat-option>
+              <mat-option value="failed">Failed</mat-option>
+              <mat-option value="skipped">Skipped</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Suite</mat-label>
+            <mat-select [value]="suiteFilter()" (valueChange)="suiteFilter.set($event)">
+              <mat-option value="all">All suites</mat-option>
+              @for (suite of suiteOptions(); track suite.id) {
+                <mat-option [value]="suite.id">{{ suite.suiteTitle }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Severity</mat-label>
+            <mat-select [value]="severityFilter()" (valueChange)="severityFilter.set($event)">
+              <mat-option value="all">All severities</mat-option>
+              @for (severity of severityOptions(); track severity) {
+                <mat-option [value]="severity">{{ severity }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </section>
+
+        @if (!filteredCases().length) {
+          <app-empty-state title="No testcase results match these filters" description="Change the search or status filters to continue execution." />
+        } @else {
+          <div class="case-list">
+            @for (caseResult of filteredCases(); track caseResult.id) {
+              <article class="case-row" [class.expanded]="isExpanded(caseResult.id)">
+                <button type="button" class="case-row__headline" (click)="toggleCase(caseResult.id)">
+                  <div class="case-row__copy">
+                    <div class="case-row__topline">
+                      <div class="case-id-pill">{{ caseResult.sourceCaseId }}</div>
+                      <app-status-badge [status]="caseResult.status" [label]="statusLabel(caseResult.status)"></app-status-badge>
+                    </div>
+                    <strong>{{ caseResult.title }}</strong>
+                    <div class="case-row__meta">
+                      <span>{{ caseResult.suiteTitle }}</span>
+                      <span>{{ caseResult.feature }}</span>
+                      <span>{{ caseResult.severity }}</span>
+                    </div>
+                  </div>
+                  <span class="expand-indicator">{{ isExpanded(caseResult.id) ? '-' : '+' }}</span>
+                </button>
+
+                <div class="case-row__actions">
+                  <button
+                    type="button"
+                    class="status-button passed"
+                    [class.is-selected]="caseResult.status === 'passed'"
+                    [attr.aria-pressed]="caseResult.status === 'passed'"
+                    [disabled]="run()!.status === 'completed' || updatingCaseId() === caseResult.id"
+                    (click)="updateCaseStatus(caseResult, 'passed')"
+                  >
+                    Pass
+                  </button>
+                  <button
+                    type="button"
+                    class="status-button failed"
+                    [class.is-selected]="caseResult.status === 'failed'"
+                    [attr.aria-pressed]="caseResult.status === 'failed'"
+                    [disabled]="run()!.status === 'completed' || updatingCaseId() === caseResult.id"
+                    (click)="updateCaseStatus(caseResult, 'failed')"
+                  >
+                    Fail
+                  </button>
+                  <button
+                    type="button"
+                    class="status-button skipped"
+                    [class.is-selected]="caseResult.status === 'skipped'"
+                    [attr.aria-pressed]="caseResult.status === 'skipped'"
+                    [disabled]="run()!.status === 'completed' || updatingCaseId() === caseResult.id"
+                    (click)="updateCaseStatus(caseResult, 'skipped')"
+                  >
+                    Skip
+                  </button>
+                </div>
+
+                @if (isExpanded(caseResult.id)) {
+                  <div class="case-row__detail">
+                    <div class="detail-copy">
+                      <section class="detail-panel detail-panel--meta">
+                        <div class="detail-panel__header">
+                          <span class="detail-label">Testcase profile</span>
+                        </div>
+
+                        <div class="detail-meta-grid">
+                          <article class="detail-meta-card">
+                            <span>Case ID</span>
+                            <strong>{{ caseResult.sourceCaseId }}</strong>
+                          </article>
+                          <article class="detail-meta-card">
+                            <span>Execution status</span>
+                            <strong>{{ statusLabel(caseResult.status) }}</strong>
+                          </article>
+                          <article class="detail-meta-card">
+                            <span>Source review status</span>
+                            <strong>{{ snapshotSourceReviewStatus(caseResult) }}</strong>
+                          </article>
+                          <article class="detail-meta-card">
+                            <span>Feature</span>
+                            <strong>{{ caseResult.feature }}</strong>
+                          </article>
+                          <article class="detail-meta-card">
+                            <span>Scenario</span>
+                            <strong>{{ caseResult.scenario }}</strong>
+                          </article>
+                          <article class="detail-meta-card">
+                            <span>Test Type</span>
+                            <strong>{{ caseResult.testType }}</strong>
+                          </article>
+                          <article class="detail-meta-card">
+                            <span>Priority</span>
+                            <strong>{{ caseResult.priority }}</strong>
+                          </article>
+                          <article class="detail-meta-card">
+                            <span>Severity</span>
+                            <strong>{{ caseResult.severity }}</strong>
+                          </article>
+                          <article class="detail-meta-card">
+                            <span>Automation Candidate</span>
+                            <strong>{{ automationCandidateLabel(caseResult) }}</strong>
+                          </article>
+                          <article class="detail-meta-card detail-meta-card--wide">
+                            <span>Linked Taxonomy</span>
+                            <strong>{{ snapshotLinkedTaxonomy(caseResult) || 'Not linked' }}</strong>
+                          </article>
+                        </div>
+                      </section>
+
+                      <div class="detail-copy-grid">
+                        <section class="detail-panel">
+                          <div class="detail-panel__header">
+                            <span class="detail-label">Description</span>
+                          </div>
+                          <p>{{ caseResult.objective }}</p>
+
+                          <div class="detail-inline-groups">
+                            @if (caseResult.notes) {
+                              <div>
+                                <span class="detail-label">Notes</span>
+                                <p>{{ caseResult.notes }}</p>
+                              </div>
+                            }
+                          </div>
+                        </section>
+
+                        <section class="detail-panel">
+                          <div class="detail-panel__header">
+                            <span class="detail-label">Conditions and data</span>
+                          </div>
+
+                          @if (snapshotPreconditions(caseResult).length) {
+                            <div class="detail-list-block">
+                              <span class="detail-label">Preconditions</span>
+                              <ul>
+                                @for (precondition of snapshotPreconditions(caseResult); track precondition) {
+                                  <li>{{ precondition }}</li>
+                                }
+                              </ul>
+                            </div>
+                          }
+
+                          @if (snapshotTestData(caseResult).length) {
+                            <div class="detail-list-block">
+                              <span class="detail-label">Test Data</span>
+                              <ul>
+                                @for (testDataItem of snapshotTestData(caseResult); track testDataItem) {
+                                  <li>{{ testDataItem }}</li>
+                                }
+                              </ul>
+                            </div>
+                          }
+
+                          @if (!snapshotPreconditions(caseResult).length && !snapshotTestData(caseResult).length) {
+                            <p class="detail-muted">No preconditions or test data were captured for this testcase.</p>
+                          }
+                        </section>
+                      </div>
+
+                      @if (snapshotSteps(caseResult).length) {
+                        <section class="detail-panel">
+                          <div class="detail-panel__header">
+                            <span class="detail-label">Steps and expected results</span>
+                          </div>
+
+                          <div class="execution-step-list">
+                            @for (step of snapshotSteps(caseResult); track $index) {
+                              <article class="execution-step-card">
+                                <div class="execution-step-card__index">{{ $index + 1 }}</div>
+                                <div class="execution-step-card__copy">
+                                  <strong>{{ step.action || 'No action provided' }}</strong>
+                                  <span>{{ step.expectedResult || 'No expected result provided' }}</span>
+                                </div>
+                              </article>
+                            }
+                          </div>
+                        </section>
+                      }
+
+                    </div>
+
+                    <aside class="detail-review">
+                      <mat-form-field appearance="outline">
+                        <mat-label>Execution comment</mat-label>
+                        <textarea
+                          matInput
+                          rows="4"
+                          [value]="currentBuffer(caseResult.id).comment"
+                          (input)="updateBuffer(caseResult.id, 'comment', $any($event.target).value)"
+                          [disabled]="run()!.status === 'completed'"
+                        ></textarea>
+                      </mat-form-field>
+
+                      <mat-form-field appearance="outline">
+                        <mat-label>Defect link</mat-label>
+                        <input
+                          matInput
+                          [value]="currentBuffer(caseResult.id).defectLink"
+                          (input)="updateBuffer(caseResult.id, 'defectLink', $any($event.target).value)"
+                          [disabled]="run()!.status === 'completed'"
+                          placeholder="Optional bug ticket or evidence link"
+                        />
+                      </mat-form-field>
+
+                      <div class="detail-meta">
+                        <span>Last updated {{ formatDate(caseResult.updatedAt) }}</span>
+                        @if (caseResult.executedBy) {
+                          <span>by {{ caseResult.executedBy }}</span>
+                        }
+                      </div>
+                    </aside>
+                  </div>
+                }
+              </article>
+            }
+          </div>
+        }
+
+        @if (run()!.status !== 'completed') {
+          <div class="cases-card__footer">
+            <button
+              mat-flat-button
+              class="run-complete-button cases-complete-button"
+              type="button"
+              [disabled]="!canComplete()"
+              (click)="completeRun()"
+            >
+              {{ completing() ? 'Completing...' : 'Complete Run' }}
+            </button>
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+  }
+</section>

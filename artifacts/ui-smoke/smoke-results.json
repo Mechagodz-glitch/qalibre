@@ -1,0 +1,55 @@
+{
+  "dashboardMetrics": {
+    "count": 4,
+    "uniqueTops": 1,
+    "tops": [
+      181,
+      181,
+      181,
+      181
+    ]
+  },
+  "dashboardDonut": {
+    "gap": 25,
+    "chartOffsetFromBlockCenter": -91
+  },
+  "dashboardFilterButtonCount": 2,
+  "tabText": [
+    "rgb(247, 251, 255)",
+    "rgb(23, 57, 70)",
+    "rgb(23, 57, 70)"
+  ],
+  "testRunMetrics": {
+    "count": 4,
+    "uniqueTops": 1,
+    "tops": [
+      94,
+      94,
+      94,
+      94
+    ]
+  },
+  "testRunHeaderExists": 0,
+  "testExecutionMetrics": {
+    "count": 4,
+    "uniqueTops": 1,
+    "tops": [
+      94,
+      94,
+      94,
+      94
+    ]
+  },
+  "testExecutionHeaderExists": 0,
+  "runCardCount": 1,
+  "runDetailState": {
+    "hasBackButton": true,
+    "hasCompleteButton": true,
+    "backBackground": "linear-gradient(rgba(255, 239, 210, 0.96), rgba(255, 246, 227, 0.94))",
+    "completeBackground": "linear-gradient(rgba(216, 247, 217, 0.95), rgba(234, 250, 232, 0.92))"
+  },
+  "generatorHeader": {
+    "pageMetricsExists": false,
+    "pageHeaderColumns": "1066.41px"
+  }
+}

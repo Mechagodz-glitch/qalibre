@@ -1,0 +1,992 @@
+ANALYTICS DASHBOARD
+
+User Stories & Acceptance Criteria
+
+Safety Observations Module · 6 Features
+
+
+
+Features Covered
+
+Feature 1 – Date Range Picker with Persistent Selection
+
+Feature 2 – Unit Selection Dropdown with Role-Based Access
+
+Feature 3 – Observations Recorded Counter with Window Comparison
+
+Feature 4 – Timely Observation Closure Rate
+
+Feature 5 – Ratio of High Risk Observations
+
+Feature 6 – Safe Operating Hours Percentage (SOH%)
+
+
+
+  FEATURE 1    Date Range Picker with Persistent Selection
+
+Title
+
+Display date range picker with default one-week selection and session-persistent state
+
+User Story
+
+As an Operations Manager / Safety Officer, I want to select a custom date range using a calendar picker so that I can filter all analytics widgets for my chosen observation window.
+
+Description / Context
+
+The date picker is the primary global filter for the analytics dashboard. It appears in the top navigation bar (as seen in the image: '10 MAR 2026 – 17 MAR 2026') and controls all metrics on the page. It opens a calendar when clicked, allows selection of a start and end date, defaults to the current week (last 7 days), and persists the user's selection across page refreshes using browser storage or session state.
+
+Acceptance Criteria
+
+Default State & Rendering
+
+Given a user navigates to the Analytics Dashboard
+
+Then the date picker displays a default range of the last 7 days (e.g., 10 MAR 2026 – 17 MAR 2026)
+
+And the date range is shown in DD MMM YYYY – DD MMM YYYY format
+
+And a calendar icon is displayed to the left of the date text
+
+And a dropdown chevron is displayed to the right
+
+Calendar Interaction
+
+Given the date picker is visible
+
+When the user clicks on it
+
+Then a calendar modal opens with two-month view (current and previous)
+
+And the user can select a start date by clicking a date on the calendar
+
+And the user can select an end date after the start date is chosen
+
+And the selected range is highlighted between start and end dates
+
+And the user confirms the selection using an 'Apply' button
+
+Persistence Across Refresh
+
+Given a user has selected a custom date range (e.g., 01 MAR 2026 – 15 MAR 2026)
+
+When the user refreshes the browser
+
+Then the previously selected date range is retained
+
+And all dashboard widgets reload with the persisted date range
+
+Validation & Edge Cases
+
+Given the user selects an end date earlier than the start date
+
+Then the system prevents the selection and shows an inline error: 'End date must be after start date'
+
+And the calendar does not close until a valid range is selected
+
+Given the user selects a future end date
+
+Then the system caps the end date at today and displays a tooltip: 'Future dates are not selectable'
+
+Widget Reactivity
+
+Given the user applies a new date range
+
+Then all widgets — Observations Recorded, Timely Closure, High Risk Ratio, SOH% — reload with the new window
+
+And a loading state is shown per widget during data fetch
+
+Fields & Validations
+
+Start Date
+
+Mandatory; must be ≤ end date
+
+Format: DD MMM YYYY
+
+Cannot be a future date
+
+End Date
+
+Mandatory; must be ≥ start date
+
+Cannot exceed today's date
+
+Default Range
+
+System-calculated: today minus 6 days through today
+
+Business Rules
+
+Default window is always last 7 calendar days including today
+
+Persisted selection is stored per user session (localStorage or server-side session)
+
+On first login or cleared storage, default to last 7 days
+
+Date format follows the locale configured in the application settings (default: DD MMM YYYY)
+
+Maximum selectable range: configurable (default 90 days)
+
+Dependencies
+
+User session / localStorage for persistence
+
+Analytics API: accepts ISO 8601 date range parameters (start_date, end_date)
+
+Global filter state management (React context / Redux)
+
+Definition of Done
+
+Default 7-day range loads on first visit
+
+Calendar opens on click and allows start + end date selection
+
+Selected range persists after browser refresh
+
+All widgets re-fetch data on date range change
+
+Invalid date range selection is blocked with error message
+
+QA test cases validated for default, custom, future-date, and persist scenarios
+
+
+
+  FEATURE 2    Unit Selection Dropdown with Role-Based Access
+
+Title
+
+Unit multi-select dropdown filtered by user access permissions
+
+User Story
+
+As an Operations Manager, I want to select one or more units from a dropdown so that I can view analytics scoped to the units I manage.
+
+Description / Context
+
+The Unit dropdown (visible in the image as 'ALL UNITS') sits beside the date picker in the top filter bar. It lists only the units the logged-in user has been granted access to. It supports multi-select so a user managing multiple units can view aggregated or per-unit analytics. Selecting 'ALL UNITS' is the default and shows data across all accessible units.
+
+Acceptance Criteria
+
+Default State
+
+Given a user is logged in and lands on the Analytics Dashboard
+
+Then the unit dropdown defaults to 'ALL UNITS'
+
+And data is loaded for all units the user has access to
+
+Dropdown Options
+
+Given the user clicks the unit dropdown
+
+Then a list of units is shown, limited to units the user is authorised to view
+
+And an 'ALL UNITS' option appears at the top of the list
+
+And each unit has a checkbox for multi-select
+
+And units are sorted alphabetically by default
+
+Multi-Select Behaviour
+
+Given the dropdown is open
+
+When the user selects two or more individual units
+
+Then all selected units are checked
+
+And the dropdown label updates to show the count, e.g., '3 Units Selected'
+
+And all dashboard widgets reload filtered by the selected units
+
+Select All / Deselect All
+
+Given the user clicks 'ALL UNITS'
+
+Then all accessible units are selected
+
+And the label reverts to 'ALL UNITS'
+
+Given a user deselects all individual units
+
+Then the dropdown reverts to 'ALL UNITS' automatically
+
+Access Control
+
+Given a user with access to only Unit A and Unit B
+
+Then Unit C and any other units are NOT visible in the dropdown
+
+And the user cannot manipulate the URL or API to retrieve data for unauthorised units
+
+Persistence
+
+Given a user has selected specific units
+
+When the page is refreshed
+
+Then the unit selection is retained and widgets load accordingly
+
+Fields & Validations
+
+Unit List
+
+Populated from the User Access Control master for the logged-in user
+
+Mandatory: at least one unit must be selected at all times
+
+Search/filter box inside dropdown for more than 10 units
+
+Business Rules
+
+Unit visibility is controlled by the access control layer; never fetched from a public list
+
+A user with 'Super Admin' role sees all units
+
+If a user's access to a unit is revoked, that unit is removed from the dropdown on next session
+
+Multi-select aggregates observations from all selected units
+
+Dependencies
+
+User Access Control / Roles API
+
+Unit Master data service
+
+Analytics API: accepts unit_ids[] parameter
+
+Definition of Done
+
+Dropdown lists only user-accessible units
+
+ALL UNITS default is active on first load
+
+Multi-select works and filters all widgets
+
+Unit selection persists on refresh
+
+Users cannot access data for units outside their access scope
+
+QA verified for single-unit, multi-unit, ALL UNITS, and access-control scenarios
+
+
+
+  FEATURE 3    Observations Recorded Counter with Window Comparison
+
+Title
+
+Display total observations count for selected window with delta indicator vs previous window
+
+User Story
+
+As a Safety Officer, I want to see the total number of observations recorded in the selected date window alongside a comparison to the previous equivalent window, so that I can quickly assess if observation activity has increased or decreased.
+
+Description / Context
+
+The Observations Recorded widget (shown in the image with count '234' and badge '+6 vs prev window') is the primary KPI card. It displays a real-time count of all observations in the selected date range. It must account for newly added observations and for observations marked as false positives (which should be excluded from the count). A delta badge shows the difference against the previous equivalent window, colour-coded red for an increase and green for a decrease, with the date range of the previous window shown below.
+
+Acceptance Criteria
+
+Count Display
+
+Given the user has selected a date range
+
+Then the widget displays the total count of valid observations (excluding false positives) for that window
+
+And the count is shown in large bold typography (primary KPI style)
+
+And the label 'OBSERVATIONS RECORDED' appears above the count
+
+False Positive Exclusion
+
+Given an observation has been marked as 'False Positive'
+
+Then it is excluded from the observation count
+
+And if a false positive is later reversed, the observation count increments accordingly
+
+Real-Time / Near-Real-Time Updates
+
+Given a new observation is added within the selected date window
+
+Then the count updates without requiring a full page reload (auto-refresh or polling)
+
+Previous Window Delta Badge
+
+Given the observation count for the selected window is higher than the previous equivalent window
+
+Then a badge displays '+{N} vs prev window' with a red upward arrow and red/pink background
+
+Given the observation count is lower than the previous window
+
+Then a badge displays '–{N} vs prev window' with a green downward arrow and green background
+
+Given the count is equal to the previous window
+
+Then the badge displays '0 vs prev window' in a neutral grey
+
+Previous Window Date Range
+
+Given the selected window is 10 MAR – 17 MAR 2026 (7 days)
+
+Then the previous window is automatically calculated as 03 MAR – 09 MAR 2026 (equal duration)
+
+And the previous window date range is displayed below the delta badge as 'PREV DD MMM – DD MMM YYYY'
+
+Zero State
+
+Given no observations exist in the selected date range
+
+Then the count displays '0'
+
+And the delta badge shows '0 vs prev window'
+
+Fields & Validations
+
+Observation Count
+
+System-calculated; non-editable
+
+Excludes observations with status = 'False Positive'
+
+Integer, minimum 0
+
+Delta Value
+
+System-calculated: current window count − previous window count
+
+Signed integer (positive = increase, negative = decrease)
+
+Previous Window Dates
+
+System-calculated based on selected window duration
+
+Displayed as: PREV DD MMM – DD MMM YYYY
+
+Business Rules
+
+Previous window duration = selected window duration (e.g., 7-day window → previous 7-day window immediately before)
+
+Formula: Delta = Count(current window) − Count(previous window)
+
+Observations in 'False Positive' status are excluded from all counts
+
+If an observation is created in the window but later marked false positive, it should be removed from the count retroactively
+
+Delta colour: increase (delta > 0) → red badge; decrease (delta < 0) → green badge; no change → grey badge
+
+Dependencies
+
+Observations data service / API (with status filter support)
+
+Date range filter (Feature 1)
+
+Unit filter (Feature 2)
+
+Definition of Done
+
+Count reflects all non-false-positive observations for selected window and units
+
+Delta badge correctly calculated and colour-coded
+
+Previous window dates displayed accurately
+
+False positive exclusion/inclusion tested
+
+Zero-count state handled gracefully
+
+Near-real-time refresh tested (polling or event-driven)
+
+
+
+  FEATURE 4    Timely Observation Closure Rate
+
+Title
+
+Calculate and display Timely Observation Closure rate with configurable risk-based SLA thresholds
+
+User Story
+
+As a Safety Manager, I want to view the Timely Observation Closure rate so that I can assess how effectively my team is closing observations within the defined risk-based SLA timelines.
+
+Description / Context
+
+This metric (shown in the image at 65% with a green bar) measures the percentage of observations closed within their risk-rating-based SLA. Each risk rating has a defined closure deadline: Risk 5 & 4 must close within 48 hours; Risk 3 within 96 hours; Risk 1 & 2 within 240 hours. These thresholds are configurable by an admin. The bar chart uses a colour scale: green (≥ 70%), yellow (30–69%), red (< 30%). An info icon tooltip explains the metric definition.
+
+Acceptance Criteria
+
+Metric Calculation & Display
+
+Given the user views the dashboard for a selected date window
+
+Then the Timely Observation Closure rate is displayed as a percentage
+
+And the formula applied is: Timely Closure % = (Observations closed within SLA ÷ Total observations in window) × 100
+
+And the percentage is rounded to the nearest whole number
+
+Risk-Based SLA Thresholds
+
+Given an observation with Risk Rating 5 or 4 is created
+
+Then the SLA window for closure is 48 hours from creation
+
+Given an observation with Risk Rating 3 is created
+
+Then the SLA window is 96 hours
+
+Given an observation with Risk Rating 1 or 2 is created
+
+Then the SLA window is 240 hours
+
+Bar Colour Thresholds
+
+Given the closure rate is 70% or above
+
+Then the bar is displayed in green
+
+Given the closure rate is between 30% and 69% (inclusive)
+
+Then the bar is displayed in yellow/amber
+
+Given the closure rate is below 30%
+
+Then the bar is displayed in red
+
+Info Icon Tooltip
+
+Given the user hovers over or taps the info (ⓘ) icon next to the metric label
+
+Then a tooltip appears displaying: 'Percentage of observations closed within risk-based SLA. Risk 5/4: 48 hrs | Risk 3: 96 hrs | Risk 1/2: 240 hrs'
+
+Admin Configuration
+
+Given an admin navigates to the SLA configuration settings
+
+Then they can update the closure hours for each risk rating group
+
+And changes are reflected in future calculations immediately upon save
+
+Zero / Empty State
+
+Given there are no observations in the selected window
+
+Then the metric displays '0%' and the bar is not rendered (replaced by a 'No Data' label)
+
+Fields & Validations
+
+Timely Closure %
+
+System-calculated; display only
+
+Range: 0–100%
+
+SLA Hours – Risk 5 & 4
+
+Configurable by Admin; default: 48 hours
+
+Must be a positive integer
+
+SLA Hours – Risk 3
+
+Configurable by Admin; default: 96 hours
+
+SLA Hours – Risk 1 & 2
+
+Configurable by Admin; default: 240 hours
+
+Business Rules
+
+Formula: Timely Closure % = (Obs closed within SLA / Total obs in selected window) × 100
+
+'Closed within SLA' = observation status changed to 'Closed' before (created_at + SLA hours)
+
+Observations still open beyond their SLA are counted as 'not timely'
+
+SLA hours are configurable per risk group in the system configuration module
+
+Bar colour scale: ≥ 70% = green, 30–69% = yellow, < 30% = red
+
+If an observation is marked false positive, it is excluded from both numerator and denominator
+
+Dependencies
+
+Observations service (creation timestamp, closure timestamp, risk rating, status)
+
+SLA Configuration master (admin-managed)
+
+Date range filter (Feature 1)
+
+Unit filter (Feature 2)
+
+Definition of Done
+
+Percentage calculated correctly using risk-based SLA rules
+
+Bar colour reflects correct threshold band
+
+Info icon tooltip accurately describes the metric and current thresholds
+
+Admin can configure SLA hours; changes reflected in calculations
+
+Zero-data state displays gracefully
+
+QA verified for each risk rating group and each colour band
+
+
+
+  FEATURE 5    Ratio of High Risk Observations
+
+Title
+
+Calculate and display High Risk Observation Ratio with inverse colour-coded bar representation
+
+User Story
+
+As a Safety Manager, I want to view the ratio of high risk observations to total observations so that I can identify if my units are generating a disproportionately high volume of critical safety incidents.
+
+Description / Context
+
+This metric (shown in the image at 82% with a red bar) represents the proportion of observations that are classified as high risk within the selected date range. The colour coding is intentionally inverted vs the closure rate — a higher ratio is bad (red), a lower ratio is good (green). An info icon provides a tooltip explaining the metric.
+
+Acceptance Criteria
+
+Metric Calculation & Display
+
+Given the user views the dashboard for a selected date window
+
+Then the High Risk Observation Ratio is displayed as a percentage
+
+And the formula is: High Risk Ratio % = (Number of High Risk Observations ÷ Total Observations in window) × 100
+
+And the percentage is rounded to the nearest whole number
+
+High Risk Definition
+
+Given an observation is created
+
+Then it is classified as 'High Risk' if its risk rating is 4 or 5
+
+Bar Colour Thresholds (Inverted Scale)
+
+Given the High Risk Ratio is above 70%
+
+Then the bar is displayed in red (indicating a critical concern)
+
+Given the ratio is between 30% and 69% (inclusive)
+
+Then the bar is displayed in yellow/amber
+
+Given the ratio is below 30%
+
+Then the bar is displayed in green (indicating a healthy distribution)
+
+Info Icon Tooltip
+
+Given the user hovers over or taps the info (ⓘ) icon
+
+Then a tooltip appears: 'Percentage of observations classified as High Risk (Rating 4 or 5) within the selected date range'
+
+Zero / Empty State
+
+Given no observations exist in the selected window
+
+Then the metric displays '0%' and bar is replaced by a 'No Data' label
+
+Given there are observations but none are high risk
+
+Then the metric displays '0%' and the bar is shown in green
+
+Fields & Validations
+
+High Risk Ratio %
+
+System-calculated; display only
+
+Range: 0–100%
+
+High Risk Threshold
+
+Risk Rating 4 and 5 are classified as High Risk (configurable by Admin)
+
+Business Rules
+
+Formula: High Risk Ratio % = (Count of obs with risk rating 4 or 5 / Total obs in window) × 100
+
+'High Risk' boundary (which risk ratings qualify) is configurable in the system settings
+
+False positive observations are excluded from both numerator and denominator
+
+Bar colour is INVERSELY coded: high % = red, low % = green (opposite of closure rate)
+
+Bar colour scale: > 70% = red, 30–69% = yellow, < 30% = green
+
+Dependencies
+
+Observations service (risk rating, status fields)
+
+Risk Rating configuration master
+
+Date range filter (Feature 1)
+
+Unit filter (Feature 2)
+
+Definition of Done
+
+Ratio calculated correctly for the selected window and units
+
+Inverted colour scale applied accurately
+
+Info icon tooltip present and accurate
+
+Zero observations and zero high-risk states handled
+
+QA verified for all three colour bands and edge cases
+
+  FEATURE 6    Safe Operating Hours Percentage (SOH%)
+
+Title
+
+Calculate and display Safe Operating Hours percentage based on hourly high-risk observation presence
+
+User Story
+
+As a Safety Manager, I want to see the Safe Operating Hours percentage for the selected date range so that I can understand what proportion of operational hours were free from any high-risk safety observations.
+
+Description / Context
+
+SOH% (shown at 94.5% in the image with a green bar) is a time-dimension metric. The selected date range is divided into discrete 1-hour windows. Each hour is assessed: if any high risk observation (risk rating 4 or 5) falls within that hour, the hour is marked 'unsafe'. SOH% = (Safe hours / Total hours in window) × 100. For example, a 24-hour window with 2 unsafe hourly windows gives SOH% = (22/24) × 100 = ~91.7%. The bar uses the same colour scale as timely closure (≥ 70% green, 30–69% yellow, < 30% red).
+
+Acceptance Criteria
+
+Hourly Window Division
+
+Given the user selects a date range of N days
+
+Then the system divides the total duration into 1-hour windows (e.g., 00:00–01:00, 01:00–02:00, …)
+
+And the total number of hours = N × 24
+
+High Risk Observation Mapping
+
+Given a high risk observation (risk rating 4 or 5) exists with a timestamp
+
+Then the system maps it to the 1-hour window that contains its timestamp
+
+And that 1-hour window is marked as 'Unsafe'
+
+And multiple high risk observations within the same hour do NOT increment the unsafe count (hour is already marked unsafe)
+
+SOH% Calculation
+
+Given a 1-day (24-hour) window with high risk observations in 2 distinct hourly windows
+
+Then Safe Hours = 22, Total Hours = 24
+
+And SOH% = (22 / 24) × 100 = 91.67%, rounded to one decimal place
+
+Given a 7-day window (168 hours) with 9 unsafe hours
+
+Then SOH% = (159 / 168) × 100 = 94.6%
+
+Bar Colour Thresholds
+
+Given SOH% is 70% or above
+
+Then the bar is displayed in green
+
+Given SOH% is between 30% and 69%
+
+Then the bar is displayed in yellow/amber
+
+Given SOH% is below 30%
+
+Then the bar is displayed in red
+
+Info Icon Tooltip
+
+Given the user hovers over or taps the ⓘ icon
+
+Then a tooltip displays: 'Percentage of 1-hour windows within the selected date range that had no High Risk observations. An hour is marked Unsafe if any High Risk observation (Rating 4 or 5) occurred within it.'
+
+Zero / Empty State
+
+Given there are no high risk observations in the window
+
+Then SOH% = 100% and the bar is displayed in green
+
+Given every hour has at least one high risk observation
+
+Then SOH% = 0% and the bar is displayed in red
+
+Fields & Validations
+
+SOH%
+
+System-calculated; display only
+
+Range: 0–100%, displayed to one decimal place
+
+Total Hours
+
+System-calculated from date range: duration in days × 24
+
+Unsafe Hours
+
+Count of distinct 1-hour windows containing ≥ 1 high risk observation
+
+Business Rules
+
+Formula: SOH% = ((Total Hours − Unsafe Hours) / Total Hours) × 100
+
+Each 1-hour window is binary: safe or unsafe (multiple observations in one hour still = 1 unsafe hour)
+
+High risk = Risk Rating 4 or 5 (same configurable threshold as Feature 5)
+
+Observation timestamp used for window mapping is the 'reported time' (not closed or updated time)
+
+False positive observations are excluded from unsafe hour mapping
+
+Bar colour scale: ≥ 70% = green, 30–69% = yellow, < 30% = red (same as Timely Closure)
+
+Partial hours at the start/end of the range are counted as full hours for simplicity
+
+Dependencies
+
+Observations service (reported_at timestamp, risk rating, status)
+
+Risk Rating configuration (to determine 'High Risk' boundary)
+
+Date range filter (Feature 1)
+
+Unit filter (Feature 2)
+
+Definition of Done
+
+SOH% calculated correctly by dividing range into 1-hour bins
+
+Multiple high risk obs in same hour counted as only one unsafe hour
+
+Zero unsafe hours → 100% SOH%; all hours unsafe → 0% SOH%
+
+Bar colour reflects correct threshold band
+
+Info icon tooltip present and accurate
+
+Performance validated: 90-day range (2160 hours) calculates in < 3 seconds
+
+QA verified for 1-day, 7-day, and 30-day windows with multiple risk distribution patterns
+
+
+
+FEATURE 7 Risk Hotspots Card
+
+Title
+
+Display ranked Risk Hotspots by Unit or Zone with observation count, delta, and peak hour
+
+User Story
+
+As a Safety Manager, I want to see which units or zones are generating the most observations, ranked by volume, so that I can quickly identify and prioritise the highest-risk areas for intervention.
+
+Description / Context
+
+The Risk Hotspots card ranks units (or zones) in descending order of total observations recorded within the selected date range. Each row displays the rank number, unit/zone name, total observation count, a delta badge versus the previous equivalent window, and the peak 1-hour slot for that unit. A proportional progress bar provides a visual sense of relative volume. A UNIT / ZONE toggle at the top-right switches the grouping dimension. Clicking a unit/zone row cross-filters the Time-wise Trend chart (Feature 8) to show data for that specific unit/zone only.
+
+Acceptance Criteria
+
+Default State & Toggle
+
+Given a user navigates to the Analytics Dashboard Then the Risk Hotspots card is displayed with the UNIT view active by default And units are listed in descending order of total observations (highest count at the top)
+
+Given the user clicks the ZONE toggle Then the list re-renders ranked by zone, with the same row structure And the ZONE button appears highlighted/active and UNIT appears inactive
+
+Row Content & Ranking
+
+Given a unit/zone has observations in the selected date window Then each row displays: rank number badge, unit/zone name, total observation count (large, right-aligned), delta badge vs previous window, peak hour slot (e.g., 8:00 – 8:59), and a proportional horizontal progress bar And the delta badge shows a red upward arrow and count (e.g., ↑ 244) when observations increased vs previous window And a green downward arrow and count when observations decreased vs previous window And the progress bar width is proportional to the unit's share of total observations across all listed units (widest bar = rank 1) And false positive observations are excluded from the count and delta calculation
+
+Peak Hour Slot
+
+Given observations exist across multiple hours for a unit in the selected window Then the peak hour is calculated as the 1-hour slot (HH:00 – HH:59) with the highest observation count for that unit And the peak hour is displayed below the delta badge in the format HH:00 – HH:59
+
+Click-through Filter to Time-wise Trend
+
+Given the Risk Hotspots card is visible When the user clicks on a unit/zone row (anywhere on the card including the chevron ›) Then the Time-wise Trend chart (Feature 8) updates to display data filtered to that unit/zone only And the Time-wise Trend unit dropdown updates to reflect the selected unit/zone name And the selected row in the hotspots card is visually highlighted (e.g., border or background tint) to indicate active selection
+
+Given the user clicks the same row again or clicks elsewhere to deselect Then the Time-wise Trend reverts to "All Units" view and the row highlight is removed
+
+Global Filter Integration
+
+Given the user changes the global date range or unit selection Then the Risk Hotspots card re-ranks units/zones and recalculates all counts, deltas, and peak hours accordingly
+
+Empty / Zero State
+
+Given no observations exist in the selected window Then the card displays a "No observations recorded for this period" placeholder message and no rows are rendered
+
+Fields & Validations
+
+Observation Count — System-calculated; non-editable; integer ≥ 0; excludes false positives
+
+Delta Badge — Signed integer; system-calculated: current window count − previous window count; red ↑ for positive, green ↓ for negative, grey for zero
+
+Peak Hour Slot — System-calculated; 1-hour bin with highest count; displayed as HH:00 – HH:59
+
+Progress Bar — Width = (unit count / max unit count) × 100%; display only; no input
+
+View Toggle — Single-select between UNIT and ZONE; UNIT is default
+
+Business Rules
+
+Ranking is strictly by total observation count (descending); ties broken alphabetically by unit/zone name
+
+Delta uses the same previous window duration logic as Feature 3 (current window count − previous equivalent window count)
+
+Only units/zones within the logged-in user's access scope are shown (same access control as Feature 2)
+
+Peak hour is calculated independently per unit/zone across the full selected date range (not per day)
+
+False positive observations are excluded from all counts, deltas, and peak hour calculations
+
+Clicking a hotspot row is a soft filter on the Time-wise Trend only; it does not affect other dashboard KPI cards
+
+Dependencies
+
+Observations service (unit/zone, reported_at timestamp, status)
+
+Unit / Zone master data service
+
+User Access Control / Roles API (Feature 2)
+
+Date range filter (Feature 1)
+
+Time-wise Trend chart (Feature 8) — receives cross-filter state from this card
+
+Definition of Done
+
+Units/zones ranked correctly in descending order of observation count
+
+Delta badge colour-coded correctly (red increase, green decrease, grey neutral)
+
+Peak hour slot calculated and displayed correctly per unit/zone
+
+UNIT / ZONE toggle switches view correctly and re-ranks list
+
+Clicking a row cross-filters Time-wise Trend and highlights the selected row
+
+Empty state handled gracefully with placeholder message
+
+Access-control verified: users only see units/zones within their access scope
+
+QA verified for UNIT view, ZONE view, date range changes, and cross-filter interaction
+
+
+
+FEATURE 8 Time-wise Trend Chart
+
+Title
+
+Display Time-wise Trend histogram with 2-hour buckets, peak bar highlight, average line, and insight strip
+
+User Story
+
+As a Safety Manager, I want to see how observations are distributed across 2-hour time slots throughout the day so that I can identify which periods have the highest safety activity and plan interventions or staffing accordingly.
+
+Description / Context
+
+The Time-wise Trend chart aggregates observations into 2-hour time buckets (0:00–1:59, 2:00–3:59, … 22:00–23:59) across the selected date range. Each bucket is plotted as a vertical bar. The bar with the highest observation count is highlighted in red with a value label and upward arrow; all others are blue. A horizontal dashed average line shows the mean count per bucket. A unit-level dropdown allows the user to filter the chart to a specific unit independently, or it can be driven by a click on the Risk Hotspots card (Feature 7). An insight strip at the bottom surfaces the peak 2-hour period in plain language.
+
+Acceptance Criteria
+
+Default State & Unit Dropdown
+
+Given the user navigates to the Analytics Dashboard Then the Time-wise Trend chart renders with "All Units" selected in its unit dropdown And data is aggregated across all units the user has access to
+
+Given the user selects a specific unit from the chart's dropdown Then the chart re-renders with data filtered to that unit only, and the insight strip updates accordingly
+
+Histogram Rendering & Bucketing
+
+Given the user views the Time-wise Trend chart for a selected date window Then the X-axis shows 12 time buckets: 0:00, 2:00, 4:00, 6:00, 8:00, 10:00, 12:00, 14:00, 16:00, 18:00, 20:00, 22:00 And the Y-axis represents the total observation count for each bucket across the full date range And observations are bucketed by the reported_at timestamp of each observation And false positive observations are excluded from all bucket counts
+
+Peak Bar Highlight
+
+Given the chart has rendered with data Then the bar with the highest observation count is rendered in red And an upward triangle (▲) and the count value are displayed above the peak bar (e.g., ▲ 62) And all other bars are rendered in blue; if two buckets have equal maximum counts, both are highlighted red
+
+Average Line
+
+Given the chart has rendered Then a horizontal dashed teal line is drawn at the average observation count per bucket And the label "Avg: {value}" is displayed at the right end of the average line (e.g., Avg: 10.75) And the average is calculated as: Total observations ÷ 12 buckets, rounded to 2 decimal places
+
+Insight Strip
+
+Given the chart has rendered with at least one observation Then an insight strip is displayed below the chart with the text: "{HH:00–HH:59} is the period which has most foot fall of observations across all units" And the peak time bucket is displayed as a highlighted pill/badge within the sentence (e.g., a red-bordered pill showing "8:00 – 09:00")
+
+When the unit filter changes (either via the dropdown or from a Risk Hotspot row click) Then the insight text updates to reflect the peak period for the selected unit, and the phrase changes to "…for {Unit Name}" when a specific unit is selected
+
+Given no observations exist in the selected window Then the insight strip displays: "No observations recorded for this period"
+
+Cross-filter from Risk Hotspots (Feature 7)
+
+Given a user clicks a unit row in the Risk Hotspots card Then the Time-wise Trend unit dropdown updates to the selected unit name And the histogram, average line, and insight strip all re-render for that unit And the user can also manually change the unit from the chart's own dropdown, which overrides the cross-filter selection
+
+Global Date Filter Integration
+
+Given the user changes the global date range Then the chart, average line, and insight strip all recalculate using the new date window while retaining the active unit filter selection
+
+Fields & Validations
+
+Time Bucket — System-derived; fixed 12 buckets of 2 hours each (0:00–23:59); non-configurable
+
+Bucket Count — System-calculated; integer ≥ 0; excludes false positives
+
+Average Line Value — System-calculated: Total observations ÷ 12; displayed to 2 decimal places
+
+Unit Dropdown — Single-select; lists only units within user's access scope; defaults to "All Units"
+
+Business Rules
+
+Bucketing is always based on the reported_at timestamp of the observation, using the time-of-day component only (date component is ignored for bucket assignment)
+
+Observations from all days in the date range are combined into the same 12 buckets (e.g., a 7-day range aggregates all 8:00–9:59 observations from all 7 days into one bar)
+
+Average formula: Avg = Total observations in selected window ÷ 12 (total number of buckets; not per day)
+
+Cross-filter from Risk Hotspots overrides the chart's own dropdown selection; the user can manually override it via the dropdown
+
+False positive observations are excluded from all bucket counts and average calculations
+
+The chart's unit dropdown is constrained to the user's access scope (same as Feature 2)
+
+Dependencies
+
+Observations service (reported_at timestamp, unit/zone, status)
+
+Date range filter (Feature 1)
+
+User Access Control / Roles API (Feature 2)
+
+Risk Hotspots card (Feature 7) — provides cross-filter state
+
+Charting library (e.g., Recharts, Chart.js, or equivalent) supporting bar chart with custom bar colours and reference lines
+
+Definition of Done
+
+12 fixed 2-hour buckets render correctly on the X-axis
+
+Peak bar highlighted red with ▲ and count label; all other bars blue
+
+Average dashed line drawn at correct value with "Avg: {value}" label
+
+Insight strip displays correct peak period with highlighted pill badge
+
+Unit dropdown filters chart independently; cross-filter from Feature 7 overrides dropdown and both update in sync
+
+Date range changes recalculate all chart elements without losing unit filter state
+
+Empty state (no data) handled with "No observations recorded for this period" message
+
+Performance validated: 90-day range renders chart in under 3 seconds
+
+QA verified for All Units view, single unit view, cross-filter interaction, and empty state
+
+
+

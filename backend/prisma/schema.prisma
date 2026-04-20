@@ -1,0 +1,669 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DatasetItemType {
+  COMPONENT_CATALOGUE
+  RULE_PACK
+  FEATURE_TYPE
+  TEST_TAXONOMY
+  SCENARIO_TEMPLATE
+  PROJECT_MEMORY
+  PRIORITY_MAPPING
+  SEVERITY_MAPPING
+  SYNONYM_ALIAS
+}
+
+enum DatasetStatus {
+  DRAFT
+  APPROVED
+  ARCHIVED
+}
+
+enum RefinementMode {
+  NORMALIZE
+  EXPAND
+  DEDUPLICATE
+  CLASSIFY
+  STRENGTHEN
+  GENERATE_STARTER_DATASET
+}
+
+enum RefinementRunStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum DraftReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ApprovalAction {
+  MANUAL_CREATE
+  MANUAL_UPDATE
+  AI_APPROVED
+  AI_REJECTED
+  ARCHIVED
+  RESTORED
+  CLONED
+  SEEDED
+}
+
+enum TestGenerationMode {
+  PROCESS_ALPHA
+  PROCESS_BETA
+  MANUAL_RECOVERY
+}
+
+enum TestGenerationRunStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum KnowledgeAssetKind {
+  FILE
+  PASTED_TEXT
+  MANUAL_INPUT
+}
+
+enum KnowledgeAssetReviewStatus {
+  RAW
+  REVIEWED
+  LINKED
+  ARCHIVED
+}
+
+enum TestCaseFeedbackAction {
+  APPROVED
+  REJECTED
+}
+
+enum TestCaseFeedbackReason {
+  MISSING_COVERAGE
+  WRONG_LOGIC
+  WRONG_ASSUMPTION
+  DUPLICATE
+  POOR_WORDING
+  WRONG_PRIORITY_OR_SEVERITY
+  NOT_APPLICABLE
+  OTHER
+}
+
+enum KnowledgeScopeLevel {
+  PROJECT
+  MODULE
+  PAGE
+}
+
+enum KnowledgeSuggestionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  APPLIED
+}
+
+enum KnowledgeSuggestionType {
+  TESTCASE_PROMOTION
+  AUTO_STRENGTHENING
+}
+
+enum KnowledgeSuggestionTargetType {
+  PROJECT_MEMORY
+  COMPONENT_CATALOGUE
+  SCENARIO_TEMPLATE
+  RULE_PACK
+}
+
+enum ManualExecutionRunStatus {
+  DRAFT
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum ManualExecutionCaseStatus {
+  UNTESTED
+  PASSED
+  FAILED
+  SKIPPED
+}
+
+enum ManualExecutionSuiteSourceType {
+  APPROVED_SUITE
+  UPLOADED_DOCUMENT
+}
+
+enum AppUserRole {
+  ADMIN
+  USER
+}
+
+enum ProjectQuarter {
+  Q1
+  Q2
+  Q3
+  Q4
+}
+
+model Contributor {
+  id          String              @id @default(cuid())
+  slug        String              @unique
+  name        String
+  roleTitle   String?
+  department  String?
+  location    String?
+  accentColor String?
+  avatarUrl   String?
+  isActive    Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  runs        TestGenerationRun[]
+  appUser     AppUser?
+  projectQuarterAllocations ProjectQuarterAllocation[]
+
+  @@index([name])
+  @@index([isActive, name])
+}
+
+model AppUser {
+  id              String       @id @default(cuid())
+  email           String       @unique
+  name            String
+  azureOid        String?      @unique
+  role            AppUserRole   @default(USER)
+  pageAccesses    String[]      @default([])
+  isActive        Boolean       @default(true)
+  contributorId   String?       @unique
+  contributor     Contributor?  @relation(fields: [contributorId], references: [id], onDelete: SetNull)
+  lastLoginAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([email])
+  @@index([role, isActive])
+}
+
+model Project {
+  id          String          @id @default(cuid())
+  slug        String          @unique
+  name        String
+  description String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  modules     ProjectModule[]
+  knowledgeAssets KnowledgeAsset[]
+  datasetItems DatasetItem[]  @relation("ProjectDatasetItems")
+  knowledgeSuggestions KnowledgeSuggestion[] @relation("ProjectKnowledgeSuggestions")
+  manualExecutionRuns ManualExecutionRun[]
+  projectQuarterAllocations ProjectQuarterAllocation[]
+
+  @@index([name])
+}
+
+model ProjectModule {
+  id          String        @id @default(cuid())
+  projectId   String
+  project     Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  slug        String
+  name        String
+  description String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  pages       ProjectPage[]
+  knowledgeAssets KnowledgeAsset[]
+  datasetItems DatasetItem[] @relation("ModuleDatasetItems")
+  knowledgeSuggestions KnowledgeSuggestion[] @relation("ModuleKnowledgeSuggestions")
+  manualExecutionRuns ManualExecutionRun[]
+
+  @@unique([projectId, slug])
+  @@index([projectId, name])
+}
+
+model ProjectPage {
+  id          String              @id @default(cuid())
+  moduleId    String
+  module      ProjectModule       @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  slug        String
+  name        String
+  routeHint   String?
+  description String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  features    ProjectFeature[]
+  runs        TestGenerationRun[]
+  knowledgeAssets KnowledgeAsset[]
+  datasetItems DatasetItem[]      @relation("PageDatasetItems")
+  knowledgeSuggestions KnowledgeSuggestion[] @relation("PageKnowledgeSuggestions")
+  manualExecutionRuns ManualExecutionRun[]
+
+  @@unique([moduleId, slug])
+  @@index([moduleId, name])
+}
+
+model ProjectFeature {
+  id          String              @id @default(cuid())
+  pageId      String
+  page        ProjectPage         @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  slug        String
+  name        String
+  description String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  runs        TestGenerationRun[]
+  manualExecutionRuns ManualExecutionRun[]
+
+  @@unique([pageId, slug])
+  @@index([pageId, name])
+}
+
+model ProjectQuarterAllocation {
+  id                 String          @id @default(cuid())
+  projectId          String
+  project            Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  year               Int
+  quarter            ProjectQuarter
+  testerContributorId String?
+  tester             Contributor?    @relation(fields: [testerContributorId], references: [id], onDelete: SetNull)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@unique([projectId, year, quarter, testerContributorId])
+  @@index([projectId, year, quarter])
+  @@index([testerContributorId])
+}
+
+model DatasetItem {
+  id                 String             @id @default(cuid())
+  itemType           DatasetItemType
+  slug               String
+  title              String
+  summary            String?
+  tags               String[]           @default([])
+  status             DatasetStatus      @default(DRAFT)
+  archivedFromStatus DatasetStatus?
+  version            Int                @default(1)
+  data               Json
+  projectId          String?
+  project            Project?           @relation("ProjectDatasetItems", fields: [projectId], references: [id], onDelete: SetNull)
+  moduleId           String?
+  module             ProjectModule?     @relation("ModuleDatasetItems", fields: [moduleId], references: [id], onDelete: SetNull)
+  pageId             String?
+  page               ProjectPage?       @relation("PageDatasetItems", fields: [pageId], references: [id], onDelete: SetNull)
+  scopeLevel         KnowledgeScopeLevel?
+  archivedAt         DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  versions           DatasetVersion[]
+  approvals          ApprovalHistory[]
+  refinementRuns     RefinementRun[]
+  refinementDrafts   RefinementDraft[]
+  knowledgeLinks     KnowledgeAssetLink[]
+  targetSuggestions  KnowledgeSuggestion[] @relation("TargetDatasetItem")
+  appliedSuggestions KnowledgeSuggestion[] @relation("AppliedDatasetItem")
+
+  @@unique([itemType, slug])
+  @@index([itemType, status, title])
+  @@index([title])
+  @@index([updatedAt])
+  @@index([projectId, moduleId, pageId])
+  @@index([itemType, status, projectId, moduleId, pageId])
+}
+
+model RefinementRun {
+  id             String              @id @default(cuid())
+  itemType       DatasetItemType
+  itemId         String
+  item           DatasetItem         @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  mode           RefinementMode
+  model          String
+  requestPayload Json
+  rawResponse    Json?
+  parsedResponse Json?
+  status         RefinementRunStatus @default(PENDING)
+  errorMessage   String?
+  correlationId  String
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  draft          RefinementDraft?
+
+  @@index([itemType, status, createdAt])
+  @@index([itemId, createdAt])
+}
+
+model RefinementDraft {
+  id           String            @id @default(cuid())
+  runId        String            @unique
+  run          RefinementRun     @relation(fields: [runId], references: [id], onDelete: Cascade)
+  itemType     DatasetItemType
+  itemId       String
+  item         DatasetItem       @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  originalData Json
+  refinedData  Json
+  diffSummary  Json
+  confidence   Float
+  reviewStatus DraftReviewStatus @default(PENDING)
+  reviewerNotes String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([itemType, reviewStatus, createdAt])
+  @@index([itemId, createdAt])
+}
+
+model ApprovalHistory {
+  id            String         @id @default(cuid())
+  itemId        String
+  item          DatasetItem    @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  itemType      DatasetItemType
+  versionBefore Int
+  versionAfter  Int
+  action        ApprovalAction
+  actor         String
+  notes         String?
+  createdAt     DateTime       @default(now())
+
+  @@index([itemType, createdAt])
+  @@index([itemId, createdAt])
+}
+
+model DatasetVersion {
+  id        String          @id @default(cuid())
+  itemId    String
+  item      DatasetItem     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  itemType  DatasetItemType
+  version   Int
+  snapshot  Json
+  createdAt DateTime        @default(now())
+  createdBy String
+
+  @@unique([itemId, version])
+  @@index([itemType, createdAt])
+}
+
+model TestGenerationRun {
+  id              String                  @id @default(cuid())
+  title           String
+  mode            TestGenerationMode
+  model           String
+  contributorId   String?
+  contributor     Contributor?            @relation(fields: [contributorId], references: [id], onDelete: SetNull)
+  pageId          String?
+  page            ProjectPage?            @relation(fields: [pageId], references: [id], onDelete: SetNull)
+  featureId       String?
+  feature         ProjectFeature?         @relation(fields: [featureId], references: [id], onDelete: SetNull)
+  requestPayload  Json
+  sourceSummary   Json
+  rawResponse     Json?
+  parsedResponse  Json?
+  status          TestGenerationRunStatus @default(PENDING)
+  errorMessage    String?
+  correlationId   String
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  draft           TestCaseDraft?
+  testCaseFeedback TestCaseFeedback[]
+  sourceSuggestions KnowledgeSuggestion[] @relation("SourceRunSuggestions")
+
+  @@index([mode, status, createdAt])
+  @@index([createdAt])
+  @@index([contributorId, createdAt])
+  @@index([pageId, createdAt])
+  @@index([featureId, createdAt])
+}
+
+model TestCaseDraft {
+  id                String            @id @default(cuid())
+  runId             String            @unique
+  run               TestGenerationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  title             String
+  summary           String?
+  version           Int               @default(1)
+  inferredContext   Json
+  generatedCases    Json
+  coverageSummary   Json
+  coverageAnalysis  Json?
+  confidence        Float
+  reviewStatus      DraftReviewStatus @default(PENDING)
+  reviewerNotes     String?
+  approvedAt        DateTime?
+  approvedBy        String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  versions          TestCaseDraftVersion[]
+  testCaseFeedback  TestCaseFeedback[]
+  sourceSuggestions KnowledgeSuggestion[] @relation("SourceDraftSuggestions")
+
+  @@index([reviewStatus, createdAt])
+  @@index([createdAt])
+}
+
+model TestCaseDraftVersion {
+  id        String        @id @default(cuid())
+  draftId   String
+  draft     TestCaseDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  version   Int
+  snapshot  Json
+  createdAt DateTime      @default(now())
+  createdBy String
+
+  @@unique([draftId, version])
+  @@index([createdAt])
+}
+
+model TestCaseFeedback {
+  id                 String                 @id @default(cuid())
+  draftId            String
+  draft              TestCaseDraft          @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  runId              String
+  run                TestGenerationRun      @relation(fields: [runId], references: [id], onDelete: Cascade)
+  caseId             String
+  draftVersion       Int
+  action             TestCaseFeedbackAction
+  reasonCode         TestCaseFeedbackReason?
+  reasonDetails      String?
+  replacementSummary String?
+  caseTitle          String
+  caseSnapshot       Json
+  reviewerNotes      String?
+  usedForLearning    Boolean                @default(false)
+  createdBy          String
+  createdAt          DateTime               @default(now())
+
+  @@index([draftId, caseId, createdAt])
+  @@index([runId, createdAt])
+  @@index([reasonCode, createdAt])
+}
+
+model KnowledgeSuggestion {
+  id                    String                    @id @default(cuid())
+  type                  KnowledgeSuggestionType
+  targetType            KnowledgeSuggestionTargetType
+  triggerType           String
+  status                KnowledgeSuggestionStatus @default(PENDING)
+  fingerprint           String
+  title                 String
+  summary               String?
+  rationale             String?
+  evidence              Json
+  proposedPayload       Json
+  sourceDraftId         String?
+  sourceDraft           TestCaseDraft?            @relation("SourceDraftSuggestions", fields: [sourceDraftId], references: [id], onDelete: SetNull)
+  sourceRunId           String?
+  sourceRun             TestGenerationRun?        @relation("SourceRunSuggestions", fields: [sourceRunId], references: [id], onDelete: SetNull)
+  sourceCaseId          String?
+  targetDatasetItemId   String?
+  targetDatasetItem     DatasetItem?              @relation("TargetDatasetItem", fields: [targetDatasetItemId], references: [id], onDelete: SetNull)
+  projectId             String?
+  project               Project?                  @relation("ProjectKnowledgeSuggestions", fields: [projectId], references: [id], onDelete: SetNull)
+  moduleId              String?
+  module                ProjectModule?            @relation("ModuleKnowledgeSuggestions", fields: [moduleId], references: [id], onDelete: SetNull)
+  pageId                String?
+  page                  ProjectPage?              @relation("PageKnowledgeSuggestions", fields: [pageId], references: [id], onDelete: SetNull)
+  scopeLevel            KnowledgeScopeLevel?
+  createdBy             String
+  reviewerNotes         String?
+  reviewedAt            DateTime?
+  reviewedBy            String?
+  approvedAt            DateTime?
+  approvedBy            String?
+  appliedAt             DateTime?
+  appliedBy             String?
+  appliedDatasetItemId  String?
+  appliedDatasetItem    DatasetItem?              @relation("AppliedDatasetItem", fields: [appliedDatasetItemId], references: [id], onDelete: SetNull)
+  appliedRefinementRunId   String?
+  appliedRefinementDraftId String?
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+
+  @@index([status, createdAt])
+  @@index([targetType, status, createdAt])
+  @@index([fingerprint, status])
+  @@index([projectId, moduleId, pageId])
+}
+
+model KnowledgeAsset {
+  id               String                      @id @default(cuid())
+  title            String
+  summary          String?
+  kind             KnowledgeAssetKind
+  sourceFormat     String?
+  fileName         String?
+  mimeType         String?
+  contentText      String?                     @db.Text
+  previewDataUrl   String?                     @db.Text
+  extractedMetadata Json?
+  tags             String[]                    @default([])
+  reviewStatus     KnowledgeAssetReviewStatus  @default(RAW)
+  projectId        String?
+  project          Project?                    @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  moduleId         String?
+  module           ProjectModule?              @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  pageId           String?
+  page             ProjectPage?                @relation(fields: [pageId], references: [id], onDelete: SetNull)
+  createdAt        DateTime                    @default(now())
+  updatedAt        DateTime                    @updatedAt
+  links            KnowledgeAssetLink[]
+
+  @@index([title])
+  @@index([kind, createdAt])
+  @@index([reviewStatus, createdAt])
+  @@index([projectId, moduleId, pageId])
+}
+
+model KnowledgeAssetLink {
+  id            String         @id @default(cuid())
+  assetId       String
+  asset         KnowledgeAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  datasetItemId String
+  datasetItem   DatasetItem    @relation(fields: [datasetItemId], references: [id], onDelete: Cascade)
+  notes         String?
+  createdAt     DateTime       @default(now())
+
+  @@unique([assetId, datasetItemId])
+  @@index([datasetItemId, createdAt])
+}
+
+model ManualExecutionRun {
+  id              String                   @id @default(cuid())
+  name            String
+  projectId       String
+  project         Project                  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  moduleId        String?
+  module          ProjectModule?           @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  pageId          String?
+  page            ProjectPage?             @relation(fields: [pageId], references: [id], onDelete: SetNull)
+  featureId       String?
+  feature         ProjectFeature?          @relation(fields: [featureId], references: [id], onDelete: SetNull)
+  environment     String?
+  buildVersion    String?
+  assignedTester  String?
+  notes           String?
+  status          ManualExecutionRunStatus @default(IN_PROGRESS)
+  createdBy       String
+  completedAt     DateTime?
+  completedBy     String?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  suites          ManualExecutionRunSuite[]
+  caseResults     ManualExecutionCaseResult[]
+
+  @@index([projectId, createdAt])
+  @@index([status, createdAt])
+  @@index([projectId, status, createdAt])
+  @@index([featureId, createdAt])
+}
+
+model ManualExecutionRunSuite {
+  id                String             @id @default(cuid())
+  runId             String
+  run               ManualExecutionRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  sourceType        ManualExecutionSuiteSourceType @default(APPROVED_SUITE)
+  sourceDraftId     String?
+  sourceRunId       String?
+  sourceDraftVersion Int?
+  sourceFileName    String?
+  suiteTitle        String
+  suiteSummary      String?
+  suitePath         String?
+  sourceProjectId   String?
+  sourceProjectName String?
+  sourceModuleId    String?
+  sourceModuleName  String?
+  sourcePageId      String?
+  sourcePageName    String?
+  sourceFeatureId   String?
+  sourceFeatureName String?
+  approvedAt        DateTime?
+  approvedBy        String?
+  caseCount         Int                @default(0)
+  orderIndex        Int                @default(0)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  caseResults       ManualExecutionCaseResult[]
+
+  @@index([runId, orderIndex])
+  @@index([sourceDraftId, createdAt])
+  @@index([sourceType, createdAt])
+}
+
+model ManualExecutionCaseResult {
+  id                 String                    @id @default(cuid())
+  runId              String
+  run                ManualExecutionRun        @relation(fields: [runId], references: [id], onDelete: Cascade)
+  runSuiteId         String
+  runSuite           ManualExecutionRunSuite   @relation(fields: [runSuiteId], references: [id], onDelete: Cascade)
+  sourceCaseId       String
+  orderIndex         Int                       @default(0)
+  title              String
+  objective          String
+  feature            String
+  scenario           String
+  testType           String
+  priority           String
+  severity           String
+  automationCandidate Boolean                  @default(false)
+  tags               String[]                  @default([])
+  sourceReferences   String[]                  @default([])
+  notes              String?
+  caseSnapshot       Json
+  status             ManualExecutionCaseStatus @default(UNTESTED)
+  comment            String?
+  defectLink         String?
+  executedAt         DateTime?
+  executedBy         String?
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+
+  @@index([runId, status, orderIndex])
+  @@index([runSuiteId, orderIndex])
+  @@index([feature, status])
+  @@index([severity, status])
+}
