@@ -4,6 +4,7 @@ backend/node_modules/
 frontend/dist/
 backend/dist/
 frontend/.angular/
+.env
 backend/.env
 frontend/.env
 npm-debug.log*

@@ -90,5 +90,7 @@ services:
 
 volumes:
   qa_dataset_workbench_pgdata:
+    external: true
+    name: ${POSTGRES_VOLUME_NAME:-qa_dataset_workbench_pgdata}
   backend_node_modules:
   frontend_node_modules:
