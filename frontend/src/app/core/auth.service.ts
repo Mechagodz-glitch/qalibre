@@ -1,5 +1,6 @@
 import { HttpErrorResponse, HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import {
   AuthenticationResult,
   BrowserCacheLocation,
@@ -75,7 +76,9 @@ function getFriendlyErrorMessage(error: unknown) {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  private static readonly inactivityTimeoutMs = 10 * 60 * 1000;
   private readonly http = inject(HttpClient);
+  private readonly router = inject(Router);
   private readonly loadingState = signal(true);
   private readonly authConfigState = signal<AuthConfig | null>(null);
   private readonly currentUserState = signal<CurrentUserProfile | null>(null);
@@ -83,6 +86,8 @@ export class AuthService {
   private readonly msalState = signal<PublicClientApplication | null>(null);
   private readonly initializedState = signal(false);
   private initializationPromise: Promise<void> | null = null;
+  private inactivityTimerId: number | null = null;
+  private inactivityListenersBound = false;
 
   readonly loading = computed(() => this.loadingState());
   readonly initialized = computed(() => this.initializedState());
@@ -189,6 +194,14 @@ export class AuthService {
     }
   }
 
+  handleUnauthorizedSession(message = 'You are signed out or your session expired. Please sign in again.') {
+    this.clearSession();
+    this.authErrorState.set(message);
+    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+      void this.router.navigateByUrl('/login', { replaceUrl: true });
+    }
+  }
+
   consumeReturnUrl() {
     const returnUrl = getAuthStorageItem(authReturnUrlStorageKey)?.trim();
     removeAuthStorageItem(authReturnUrlStorageKey);
@@ -255,8 +268,7 @@ export class AuthService {
       const response = await firstValueFrom(
         this.http.get<{ user: CurrentUserProfile }>(`${stripTrailingSlash(environment.apiBaseUrl)}/auth/me`),
       );
-      this.currentUserState.set(response.user);
-      this.storeCurrentUser(response.user);
+      this.setAuthenticatedUser(response.user);
       return response.user;
     } catch (error) {
       if (error instanceof HttpErrorResponse) {
@@ -277,6 +289,7 @@ export class AuthService {
   }
 
   private async initializeInternal() {
+    this.bindInactivityListeners();
     const config = await firstValueFrom(
       this.http.get<AuthConfig>(`${stripTrailingSlash(environment.apiBaseUrl)}/auth/config`),
     );
@@ -303,7 +316,7 @@ export class AuthService {
 
     const storedUser = this.getStoredCurrentUser();
     if (storedUser) {
-      this.currentUserState.set(storedUser);
+      this.setAuthenticatedUser(storedUser);
     }
 
     const storedToken = this.getStoredIdToken();
@@ -369,6 +382,7 @@ export class AuthService {
   }
 
   private clearSession() {
+    this.clearInactivityTimer();
     removeAuthStorageItem(authTokenStorageKey);
     removeAuthStorageItem(authReturnUrlStorageKey);
     removeAuthStorageItem(authUserStorageKey);
@@ -402,5 +416,55 @@ export class AuthService {
 
   private storeCurrentUser(user: CurrentUserProfile) {
     setAuthStorageItem(authUserStorageKey, JSON.stringify(user));
+  }
+
+  private setAuthenticatedUser(user: CurrentUserProfile) {
+    this.currentUserState.set(user);
+    this.storeCurrentUser(user);
+    this.scheduleInactivityLogout();
+  }
+
+  private bindInactivityListeners() {
+    if (this.inactivityListenersBound || typeof window === 'undefined') {
+      return;
+    }
+
+    const resetTimer = () => {
+      if (!this.currentUserState()) {
+        return;
+      }
+
+      this.scheduleInactivityLogout();
+    };
+
+    ['click', 'keydown', 'mousemove', 'scroll', 'touchstart'].forEach((eventName) => {
+      window.addEventListener(eventName, resetTimer, { passive: true });
+    });
+
+    this.inactivityListenersBound = true;
+  }
+
+  private scheduleInactivityLogout() {
+    if (typeof window === 'undefined' || !this.currentUserState()) {
+      return;
+    }
+
+    this.clearInactivityTimer();
+    this.inactivityTimerId = window.setTimeout(() => {
+      if (!this.currentUserState()) {
+        return;
+      }
+
+      this.handleUnauthorizedSession('You were logged out after 10 minutes of inactivity. Please sign in again.');
+    }, AuthService.inactivityTimeoutMs);
+  }
+
+  private clearInactivityTimer() {
+    if (typeof window === 'undefined' || this.inactivityTimerId === null) {
+      return;
+    }
+
+    window.clearTimeout(this.inactivityTimerId);
+    this.inactivityTimerId = null;
   }
 }

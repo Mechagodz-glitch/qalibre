@@ -69,10 +69,24 @@ type ProjectExecutionModuleRow = {
 type ProjectExecutionFeatureRow = {
   featureId: string;
   featureName: string;
+  testerLabel: string;
 };
 
-function getExecutionRunOwner(run: Pick<ManualExecutionRunSummary, 'assignedTester' | 'createdBy'>) {
-  return run.assignedTester?.trim() || run.createdBy?.trim() || '';
+function normalizeOwnerName(value: string | null | undefined) {
+  const normalized = value?.trim() ?? '';
+  if (!normalized || normalized.toLowerCase() === 'local-admin') {
+    return '';
+  }
+
+  return normalized;
+}
+
+function getExecutionRunOwner(run: Pick<ManualExecutionRunSummary, 'assignedTester' | 'completedBy' | 'createdBy'>) {
+  return (
+    normalizeOwnerName(run.assignedTester) ||
+    normalizeOwnerName(run.completedBy) ||
+    normalizeOwnerName(run.createdBy)
+  );
 }
 
 @Component({
@@ -1752,9 +1766,14 @@ export class AdminPageComponent {
 
   projectTesterSummary(projectId: string) {
     return this.summarizeTesterNames(
-      this.executionRuns()
-        .filter((run) => run.status === 'completed' && run.project.id === projectId)
-        .map((run) => getExecutionRunOwner(run)),
+      [
+        ...this.allocations()
+          .filter((allocation) => allocation.project.id === projectId)
+          .map((allocation) => allocation.tester?.name?.trim() ?? ''),
+        ...this.executionRuns()
+          .filter((run) => run.status === 'completed' && run.project.id === projectId)
+          .map((run) => getExecutionRunOwner(run)),
+      ],
     );
   }
 
@@ -1773,6 +1792,11 @@ export class AdminPageComponent {
         features: pageItem.features.map((featureItem) => ({
           featureId: featureItem.id,
           featureName: featureItem.name,
+          testerLabel: this.summarizeTesterNames(
+            completedRuns
+              .filter((run) => run.feature?.id === featureItem.id)
+              .map((run) => getExecutionRunOwner(run)),
+          ),
         })),
       }));
 

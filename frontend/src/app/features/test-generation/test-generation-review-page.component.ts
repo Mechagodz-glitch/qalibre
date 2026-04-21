@@ -140,6 +140,7 @@ export class TestGenerationReviewPageComponent {
   readonly selectedCaseIndex = signal(-1);
   readonly loading = signal(true);
   readonly draftExporting = signal(false);
+  readonly draftDeleting = signal(false);
   readonly caseSavingIndex = signal<number | null>(null);
   readonly caseSaveActionType = signal<'save' | 'delete' | null>(null);
   readonly caseReviewActionIndex = signal<number | null>(null);
@@ -1133,6 +1134,41 @@ export class TestGenerationReviewPageComponent {
       });
   }
 
+  deleteDraft() {
+    const draft = this.selectedDraft();
+    if (!draft || this.draftDeleting()) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete "${draft.title}" permanently? This will remove the entire suite from the suits deck.`,
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    const nextDraft =
+      this.filteredDrafts().filter((item) => item.id !== draft.id)[0] ??
+      this.drafts().filter((item) => item.id !== draft.id)[0] ??
+      null;
+
+    this.draftDeleting.set(true);
+    this.api
+      .deleteGenerationDraft(draft.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.draftDeleting.set(false);
+          this.notifications.success('Draft deleted.');
+          this.applyDraftDeletion(draft.id, nextDraft);
+        },
+        error: () => {
+          this.draftDeleting.set(false);
+          this.notifications.error('Delete draft action failed.');
+        },
+      });
+  }
+
   manualRecovery() {
     const draft = this.selectedDraft();
     if (!draft) {
@@ -1242,6 +1278,25 @@ export class TestGenerationReviewPageComponent {
 
   private replaceDraft(draft: TestGenerationDraft) {
     this.drafts.set(this.drafts().map((item) => (item.id === draft.id ? draft : item)));
+  }
+
+  private applyDraftDeletion(deletedDraftId: string, nextDraft: TestGenerationDraft | null) {
+    this.drafts.set(this.drafts().filter((item) => item.id !== deletedDraftId));
+    this.draftSelectionId.set(null);
+
+    if (nextDraft) {
+      this.selectedDraft.set(nextDraft);
+      this.populateForm(nextDraft);
+      requestAnimationFrame(() => this.scrollReviewMainToTop());
+    } else {
+      this.selectedDraft.set(null);
+    }
+
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { draftId: nextDraft?.id ?? null },
+      queryParamsHandling: 'merge',
+    });
   }
 
   private applyDraftUpdate(draft: TestGenerationDraft, indexToKeepOpen?: number) {

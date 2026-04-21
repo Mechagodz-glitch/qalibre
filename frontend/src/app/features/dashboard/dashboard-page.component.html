@@ -162,11 +162,6 @@
                 class="performance-stage"
                 [class.performance-stage--scrollable]="performanceChartScrollable()"
               >
-                <div class="performance-axis">
-                  @for (tick of performanceChartTicks(); track tick.value) {
-                    <span [style.bottom.%]="tick.position">{{ tick.label }}</span>
-                  }
-                </div>
                 <div
                   class="performance-scroll"
                   [class.performance-scroll--active]="performanceChartScrollable()"
@@ -175,42 +170,12 @@
                     class="performance-chart"
                     [style.width.px]="performanceChartContentWidth()"
                   >
-                    @for (tick of performanceChartTicks(); track tick.value) {
-                      <span class="performance-grid-line" [style.bottom.%]="tick.position"></span>
-                    }
-                    <div
-                      class="performance-groups"
-                      [style.grid-template-columns]="'repeat(' + performanceBreakdownRows().length + ', minmax(8rem, 1fr))'"
-                    >
-                      @for (row of performanceBreakdownRows(); track row.projectName) {
-                        <article class="performance-group">
-                          <div class="performance-group__bars">
-                            <span
-                              class="performance-bar performance-bar--generated"
-                              [style.height.%]="performanceBarHeight(row.generated)"
-                              [matTooltip]="performanceTooltip(row, 'generated')"
-                              matTooltipPosition="above"
-                              tabindex="0"
-                            ></span>
-                            <span
-                              class="performance-bar performance-bar--approved"
-                              [style.height.%]="performanceBarHeight(row.approved)"
-                              [matTooltip]="performanceTooltip(row, 'approved')"
-                              matTooltipPosition="above"
-                              tabindex="0"
-                            ></span>
-                            <span
-                              class="performance-bar performance-bar--executed"
-                              [style.height.%]="performanceBarHeight(row.executed)"
-                              [matTooltip]="performanceTooltip(row, 'executed')"
-                              matTooltipPosition="above"
-                              tabindex="0"
-                            ></span>
-                          </div>
-
-                          <span class="performance-group__label">{{ row.projectName }}</span>
-                        </article>
-                      }
+                    <div class="performance-canvas-wrap">
+                      <canvas
+                        #performanceChartCanvas
+                        role="img"
+                        aria-label="Generated, approved, and executed cases by project"
+                      ></canvas>
                     </div>
                   </div>
                 </div>
@@ -327,10 +292,18 @@
           } @else {
             <div class="qa-metrics-table">
               <div class="qa-metrics-table__head">
-                <span>QA Member</span>
-                <span>Total Projects</span>
-                <span>Total Generations</span>
-                <span>QA Cycles</span>
+                <span class="qa-metrics-table__head-cell">
+                  <strong>QA Member</strong>
+                </span>
+                <span class="qa-metrics-table__head-cell qa-metrics-table__head-cell--metric">
+                  <strong>Total Projects</strong>
+                </span>
+                <span class="qa-metrics-table__head-cell qa-metrics-table__head-cell--metric">
+                  <strong>Total Generations</strong>
+                </span>
+                <span class="qa-metrics-table__head-cell qa-metrics-table__head-cell--metric">
+                  <strong>QA Cycles</strong>
+                </span>
               </div>
 
               <div class="qa-metrics-table__body">

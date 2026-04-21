@@ -933,8 +933,13 @@ export async function getManualExecutionBootstrap() {
     prisma.appUser.findMany({
       where: {
         isActive: true,
-        contributorId: {
-          not: null,
+        contributor: {
+          is: {
+            isActive: true,
+            roleTitle: {
+              not: null,
+            },
+          },
         },
       },
       select: {

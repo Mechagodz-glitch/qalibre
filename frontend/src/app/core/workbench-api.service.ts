@@ -437,6 +437,10 @@ export class WorkbenchApiService {
     );
   }
 
+  deleteGenerationDraft(draftId: string) {
+    return this.http.delete<{ success: true }>(`${this.apiBaseUrl}/test-generation/drafts/${draftId}`);
+  }
+
   approveGenerationTestCase(draftId: string, caseId: string, body?: { reviewerNotes?: string }) {
     return this.http.post<{ draft: TestGenerationDraft; feedback: TestCaseFeedback }>(
       `${this.apiBaseUrl}/test-generation/drafts/${draftId}/test-cases/${encodeURIComponent(caseId)}/approve`,

@@ -5,12 +5,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 EC2_HOST="${EC2_HOST:-16.28.63.198}"
-PEM_PATH="${PEM_PATH:-C:/Users/Aravind/server_keys/TEST-ENGG-SOFT-TP-MISC-OTH-QALIBRE-AF_SOUTH_1-0426-00001_2026-04-20_05_30_46.pem}"
+PEM_PATH="${PEM_PATH:-C:/Users/Khyati/Downloads/TEST-ENGG-SOFT-TP-MISC-OTH-QALIBRE-AF_SOUTH_1-0426-00001_2026-04-20_05_30_46.pem}"
 EC2_USER="${EC2_USER:-ubuntu}"
 REMOTE_DIR="${REMOTE_DIR:-/opt/qalibre/app}"
 SSH_PORT="${SSH_PORT:-22}"
 REMOTE_BOOTSTRAP_DIR="${REMOTE_BOOTSTRAP_DIR:-/tmp/qalibre-ec2-bootstrap}"
 SYNC_TOOL=""
+INSTALL_PREQ="false"
+COPY_LOCAL_DB="false"
 
 ROOT_ENV_FILE="${PROJECT_DIR}/.env"
 BACKEND_ENV_FILE="${PROJECT_DIR}/backend/.env"
@@ -40,6 +42,8 @@ Options:
   --user <ssh-user>          SSH user. If omitted, tries ec2-user, then ubuntu, then admin.
   --remote-dir <path>        Remote application directory. Default: ${REMOTE_DIR}
   --port <ssh-port>          SSH port. Default: ${SSH_PORT}
+  --install-preq             Install VM prerequisites before deployment.
+  --copy-local-db            Copy the local Docker Postgres data into the EC2 VM Postgres.
   -h, --help                 Show this help.
 EOF
 }
@@ -67,6 +71,14 @@ parse_args() {
         SSH_PORT="$2"
         shift 2
         ;;
+      --install-preq)
+        INSTALL_PREQ="true"
+        shift
+        ;;
+      --copy-local-db)
+        COPY_LOCAL_DB="true"
+        shift
+        ;;
       -h|--help)
         usage
         exit 0
@@ -90,6 +102,11 @@ require_local_tools() {
     SYNC_TOOL="tar"
   else
     fail "Required local tool not found: rsync or tar"
+  fi
+
+  if [[ "$COPY_LOCAL_DB" == "true" ]]; then
+    command -v docker >/dev/null 2>&1 || fail "--copy-local-db requires docker on the local machine."
+    command -v gzip >/dev/null 2>&1 || fail "--copy-local-db requires gzip on the local machine."
   fi
 }
 
@@ -183,6 +200,19 @@ read_kv() {
   ' "$file"
 }
 
+read_root_env_or_default() {
+  local key="$1"
+  local default_value="$2"
+  local value
+  value="$(read_kv "$ROOT_ENV_FILE" "$key" || true)"
+
+  if [[ -n "$value" ]]; then
+    printf '%s\n' "$value"
+  else
+    printf '%s\n' "$default_value"
+  fi
+}
+
 prepare_pem_copy() {
   local resolved_pem_path
   resolved_pem_path="$(resolve_local_path "$PEM_PATH")"
@@ -249,6 +279,32 @@ remote_exec() {
 
 remote_exec_root() {
   ssh $(ssh_opts) "${EC2_USER}@${EC2_HOST}" "sudo bash -lc $(printf '%q' "$*")"
+}
+
+local_compose() {
+  (
+    cd "$PROJECT_DIR"
+    docker compose "$@"
+  )
+}
+
+query_local_app_user_count() {
+  local postgres_user postgres_password postgres_db
+  postgres_user="$(read_root_env_or_default "POSTGRES_USER" "qa_user")"
+  postgres_password="$(read_root_env_or_default "POSTGRES_PASSWORD" "qa_password")"
+  postgres_db="$(read_root_env_or_default "POSTGRES_DB" "qa_dataset_db")"
+
+  local_compose exec -T -e "PGPASSWORD=${postgres_password}" postgres \
+    psql -At -U "${postgres_user}" -d "${postgres_db}" -c 'SELECT COUNT(*) FROM "AppUser";'
+}
+
+query_remote_app_user_count() {
+  local postgres_user postgres_password postgres_db
+  postgres_user="$(read_root_env_or_default "POSTGRES_USER" "qa_user")"
+  postgres_password="$(read_root_env_or_default "POSTGRES_PASSWORD" "qa_password")"
+  postgres_db="$(read_root_env_or_default "POSTGRES_DB" "qa_dataset_db")"
+
+  remote_exec_root "cd '${REMOTE_DIR}' && docker compose exec -T -e PGPASSWORD='${postgres_password}' postgres psql -At -U '${postgres_user}' -d '${postgres_db}' -c 'SELECT COUNT(*) FROM \"AppUser\";'"
 }
 
 upload_install_script() {
@@ -354,9 +410,88 @@ deploy_remote_stack() {
   remote_exec_root "cd '${REMOTE_DIR}' && docker compose ps"
 }
 
+ensure_local_postgres_running() {
+  local postgres_container_id
+  postgres_container_id="$(local_compose ps -q postgres 2>/dev/null || true)"
+  [[ -n "$postgres_container_id" ]] || fail "--copy-local-db requires the local Docker Postgres service to be running for this project."
+
+  if [[ "$(docker inspect -f '{{.State.Running}}' "$postgres_container_id" 2>/dev/null || true)" != "true" ]]; then
+    fail "--copy-local-db requires the local Docker Postgres container to be running. Start it before deploying."
+  fi
+}
+
+wait_for_remote_postgres() {
+  local postgres_user postgres_db
+  postgres_user="$(read_root_env_or_default "POSTGRES_USER" "qa_user")"
+  postgres_db="$(read_root_env_or_default "POSTGRES_DB" "qa_dataset_db")"
+
+  log "Waiting for remote Postgres to accept connections."
+  remote_exec_root "cd '${REMOTE_DIR}' && for attempt in \$(seq 1 60); do docker compose exec -T postgres pg_isready -U '${postgres_user}' -d '${postgres_db}' >/dev/null 2>&1 && exit 0; sleep 2; done; exit 1"
+}
+
+copy_local_db_to_remote() {
+  local postgres_user postgres_password postgres_db remote_dump_path local_user_count remote_user_count
+  postgres_user="$(read_root_env_or_default "POSTGRES_USER" "qa_user")"
+  postgres_password="$(read_root_env_or_default "POSTGRES_PASSWORD" "qa_password")"
+  postgres_db="$(read_root_env_or_default "POSTGRES_DB" "qa_dataset_db")"
+  remote_dump_path="${REMOTE_BOOTSTRAP_DIR}/local-db.sql.gz"
+
+  ensure_local_postgres_running
+  LOCAL_DB_DUMP="$(mktemp --suffix=.sql.gz)"
+  local_user_count="$(query_local_app_user_count | tr -d '[:space:]')"
+
+  log "Creating a dump of the local Docker Postgres database."
+  local_compose exec -T -e "PGPASSWORD=${postgres_password}" postgres \
+    pg_dump \
+      -U "${postgres_user}" \
+      -d "${postgres_db}" \
+      --clean \
+      --if-exists \
+      --no-owner \
+      --no-privileges \
+      --encoding=UTF8 \
+    | gzip -c > "${LOCAL_DB_DUMP}"
+
+  [[ -s "${LOCAL_DB_DUMP}" ]] || fail "Local database dump failed or produced an empty archive."
+
+  remote_exec "mkdir -p '${REMOTE_BOOTSTRAP_DIR}'"
+  scp -i "$TEMP_PEM" -P "$SSH_PORT" -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new \
+    "${LOCAL_DB_DUMP}" \
+    "${EC2_USER}@${EC2_HOST}:${remote_dump_path}"
+
+  wait_for_remote_postgres
+
+  log "Restoring the local database dump into the EC2 VM Postgres."
+  remote_exec_root "cd '${REMOTE_DIR}' && gunzip -c '${remote_dump_path}' | docker compose exec -T -e PGPASSWORD='${postgres_password}' postgres psql -v ON_ERROR_STOP=1 -U '${postgres_user}' -d '${postgres_db}'"
+  remote_exec "rm -f '${remote_dump_path}'"
+
+  remote_user_count="$(query_remote_app_user_count | tr -d '[:space:]')"
+  log "Auth user records copied: local=${local_user_count:-0}, remote=${remote_user_count:-0}"
+
+  if [[ -n "${local_user_count}" && -n "${remote_user_count}" && "${local_user_count}" != "${remote_user_count}" ]]; then
+    warn "Local and remote AppUser counts differ. Some auth records may not have been copied as expected."
+  fi
+}
+
+summarize_remote_auth_state() {
+  local remote_user_count
+  remote_user_count="$(query_remote_app_user_count 2>/dev/null | tr -d '[:space:]' || true)"
+
+  if [[ -n "${remote_user_count}" ]]; then
+    log "Remote AppUser count: ${remote_user_count}"
+    return
+  fi
+
+  warn "Unable to query remote AppUser count."
+}
+
 cleanup() {
   if [[ -n "${TEMP_PEM:-}" && -f "${TEMP_PEM:-}" ]]; then
     rm -f "$TEMP_PEM"
+  fi
+
+  if [[ -n "${LOCAL_DB_DUMP:-}" && -f "${LOCAL_DB_DUMP:-}" ]]; then
+    rm -f "$LOCAL_DB_DUMP"
   fi
 }
 
@@ -374,10 +509,23 @@ main() {
 
   log "Using SSH target ${EC2_USER}@${EC2_HOST}:${SSH_PORT}"
 
-  bootstrap_remote_host
+  if [[ "$INSTALL_PREQ" == "true" ]]; then
+    bootstrap_remote_host
+  else
+    log "Skipping VM prerequisite installation."
+  fi
+
   sync_project
   create_remote_external_volume
   deploy_remote_stack
+
+  if [[ "$COPY_LOCAL_DB" == "true" ]]; then
+    copy_local_db_to_remote
+  else
+    log "Skipping local database copy."
+  fi
+
+  summarize_remote_auth_state
 
   log "Deployment complete."
   log "Frontend: http://${EC2_HOST}:4200"

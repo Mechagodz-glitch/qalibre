@@ -11,6 +11,7 @@ import {
   approveGenerationDraft,
   approveGenerationTestCase,
   createGenerationRun,
+  deleteGenerationDraft,
   createManualRecoveryDraft,
   exportApprovedGenerationDrafts,
   getTestcaseLibrary,
@@ -336,6 +337,25 @@ export async function registerGenerationRoutes(app: RouteApp) {
       const params = draftRouteParamsSchema.parse(request.params);
       const body = generationDraftUpdateBodySchema.parse(request.body);
       return updateGenerationDraft(params.draftId, body, request.authUser?.name ?? env.DEFAULT_ACTOR);
+    },
+  );
+
+  app.delete(
+    '/test-generation/drafts/:draftId',
+    {
+      schema: {
+        tags: ['Test Generation'],
+        params: draftRouteParamsSchema,
+        response: {
+          200: z.object({
+            success: z.literal(true),
+          }),
+        },
+      },
+    },
+    async (request) => {
+      const params = draftRouteParamsSchema.parse(request.params);
+      return deleteGenerationDraft(params.draftId);
     },
   );
 

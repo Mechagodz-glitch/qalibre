@@ -5,23 +5,15 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
-import type {
-  TestcaseLibraryNode,
-  TestcaseLibraryNodeKind,
-  TestcaseLibraryResponse,
-} from '../../core/models';
+import type { TestcaseLibraryNode, TestcaseLibraryNodeKind, TestcaseLibraryResponse } from '../../core/models';
 import { NotificationService } from '../../core/notification.service';
 import { WorkbenchApiService } from '../../core/workbench-api.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state.component';
 import { PageHeaderComponent } from '../../shared/components/page-header.component';
 
-type LibraryFilterKind = 'all' | TestcaseLibraryNodeKind;
-
-type TestcaseLibraryFlatRow = {
-  node: TestcaseLibraryNode;
-  depth: number;
-  isExpanded: boolean;
-  hasChildren: boolean;
+type LibraryBreadcrumb = {
+  id: string | null;
+  label: string;
 };
 
 @Component({
@@ -47,65 +39,61 @@ export class TestGenerationExportPageComponent {
   readonly loading = signal(true);
   readonly library = signal<TestcaseLibraryResponse | null>(null);
   readonly searchTerm = signal('');
-  readonly kindFilter = signal<LibraryFilterKind>('all');
-  readonly expandedIds = signal<string[]>([]);
-  readonly exportingId = signal<string | 'all' | null>(null);
+  readonly navigationPath = signal<string[]>([]);
+  readonly exportingId = signal<string | null>(null);
 
-  readonly kindFilters: Array<{ value: LibraryFilterKind; label: string }> = [
-    { value: 'all', label: 'All folders' },
-    { value: 'client', label: 'Clients' },
-    { value: 'module', label: 'Modules' },
-    { value: 'page', label: 'Pages' },
-    { value: 'feature', label: 'Features' },
-  ];
+  readonly breadcrumbNodes = computed(() => {
+    const trail: TestcaseLibraryNode[] = [];
+    let currentItems = this.library()?.items ?? [];
 
-  readonly summaryCards = computed(() => {
-    const summary = this.library()?.summary;
-    if (!summary) {
-      return [];
+    for (const nodeId of this.navigationPath()) {
+      const nextNode = currentItems.find((node) => node.id === nodeId);
+      if (!nextNode) {
+        break;
+      }
+
+      trail.push(nextNode);
+      currentItems = nextNode.children;
     }
 
-    return [
-      { label: 'Clients', value: summary.clientCount },
-      { label: 'Modules', value: summary.moduleCount },
-      { label: 'Pages', value: summary.pageCount },
-      { label: 'Features', value: summary.featureCount },
-      { label: 'Approved suites', value: summary.approvedSuiteCount },
-      { label: 'Approved cases', value: summary.approvedCaseCount },
-    ];
+    return trail;
   });
 
-  readonly filteredItems = computed(() => this.filterTree(this.library()?.items ?? []));
+  readonly breadcrumbs = computed<LibraryBreadcrumb[]>(() => [
+    { id: null, label: 'Testcase Library' },
+    ...this.breadcrumbNodes().map((node) => ({
+      id: node.id,
+      label: node.name,
+    })),
+  ]);
 
-  readonly visibleRows = computed(() => {
-    const rows: TestcaseLibraryFlatRow[] = [];
-    const revealAll = this.hasActiveFilters();
-
-    const walk = (nodes: TestcaseLibraryNode[], depth: number) => {
-      for (const node of nodes) {
-        const hasChildren = node.children.length > 0;
-        const isExpanded = hasChildren && (revealAll || this.expandedIds().includes(node.id));
-
-        rows.push({
-          node,
-          depth,
-          hasChildren,
-          isExpanded,
-        });
-
-        if (hasChildren && isExpanded) {
-          walk(node.children, depth + 1);
-        }
-      }
-    };
-
-    walk(this.filteredItems(), 0);
-    return rows;
+  readonly currentFolder = computed(() => {
+    const trail = this.breadcrumbNodes();
+    return trail.length ? trail[trail.length - 1] : null;
   });
 
-  readonly rowsInViewLabel = computed(() => {
-    const count = this.visibleRows().length;
-    return `${count} folder${count === 1 ? '' : 's'} in view`;
+  readonly currentItems = computed(() => this.filterCurrentLevelItems(this.currentFolder()?.children ?? this.library()?.items ?? []));
+
+  readonly currentHeading = computed(() => this.currentFolder()?.name ?? 'Approved clients');
+
+  readonly currentSubheading = computed(() => {
+    const folder = this.currentFolder();
+    if (!folder) {
+      return 'Open a client folder to browse approved testcase paths.';
+    }
+
+    switch (folder.kind) {
+      case 'client':
+        return 'Browse the modules available under this client.';
+      case 'module':
+        return 'Open a page folder or export this module scope.';
+      case 'page':
+        return 'Open a feature folder or export the approved page scope.';
+      case 'feature':
+        return 'Feature scope is ready for export.';
+      default:
+        return 'Browse approved testcase paths.';
+    }
   });
 
   constructor() {
@@ -116,22 +104,42 @@ export class TestGenerationExportPageComponent {
     this.searchTerm.set(value);
   }
 
-  setKindFilter(value: LibraryFilterKind) {
-    this.kindFilter.set(value);
+  canOpenFolder(node: TestcaseLibraryNode) {
+    return node.children.length > 0;
   }
 
-  isKindFilterActive(value: LibraryFilterKind) {
-    return this.kindFilter() === value;
+  openFolder(node: TestcaseLibraryNode) {
+    if (!this.canOpenFolder(node)) {
+      return;
+    }
+
+    const currentPath = this.breadcrumbNodes().map((item) => item.id);
+    this.navigationPath.set([...currentPath, node.id]);
+    this.resetFilters();
   }
 
-  toggleExpanded(nodeId: string) {
-    this.expandedIds.update((current) =>
-      current.includes(nodeId) ? current.filter((id) => id !== nodeId) : [...current, nodeId],
-    );
+  navigateBack() {
+    if (!this.breadcrumbNodes().length) {
+      return;
+    }
+
+    this.navigationPath.update((current) => current.slice(0, -1));
+    this.resetFilters();
   }
 
-  rowIndent(depth: number) {
-    return `${depth * 1.15}rem`;
+  navigateToBreadcrumb(index: number) {
+    if (index <= 0) {
+      this.navigationPath.set([]);
+      this.resetFilters();
+      return;
+    }
+
+    this.navigationPath.set(this.breadcrumbNodes().slice(0, index).map((node) => node.id));
+    this.resetFilters();
+  }
+
+  isBreadcrumbActive(index: number) {
+    return index === this.breadcrumbs().length - 1;
   }
 
   kindLabel(kind: TestcaseLibraryNodeKind) {
@@ -151,23 +159,6 @@ export class TestGenerationExportPageComponent {
 
   qaOwnersLabel(node: TestcaseLibraryNode) {
     return node.qaOwners.length ? node.qaOwners.join(', ') : '-';
-  }
-
-  exportAll() {
-    this.exportingId.set('all');
-    this.api
-      .exportGeneratedTestCases()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (blob) => {
-          this.downloadBlob(blob, 'testcase-library-approved.csv');
-          this.exportingId.set(null);
-        },
-        error: () => {
-          this.notifications.error('Unable to export the full testcase library.');
-          this.exportingId.set(null);
-        },
-      });
   }
 
   exportNode(node: TestcaseLibraryNode) {
@@ -204,6 +195,7 @@ export class TestGenerationExportPageComponent {
       .subscribe({
         next: (library) => {
           this.library.set(library);
+          this.navigationPath.set(this.trimNavigationPath(library.items, this.navigationPath()));
           this.loading.set(false);
         },
         error: () => {
@@ -213,31 +205,12 @@ export class TestGenerationExportPageComponent {
       });
   }
 
-  private hasActiveFilters() {
-    return Boolean(this.searchTerm().trim()) || this.kindFilter() !== 'all';
-  }
-
-  private filterTree(nodes: TestcaseLibraryNode[]): TestcaseLibraryNode[] {
-    return nodes.flatMap((node) => {
-      const children = this.filterTree(node.children);
-      const selfMatches = this.nodeMatches(node);
-
-      if (!selfMatches && !children.length) {
-        return [];
-      }
-
-      return [{ ...node, children }];
-    });
+  private filterCurrentLevelItems(nodes: TestcaseLibraryNode[]) {
+    return nodes.filter((node) => this.nodeMatches(node));
   }
 
   private nodeMatches(node: TestcaseLibraryNode) {
     const search = this.searchTerm().trim().toLowerCase();
-    const activeKind = this.kindFilter();
-    const kindMatches = activeKind === 'all' || node.kind === activeKind;
-
-    if (!kindMatches) {
-      return false;
-    }
 
     if (!search) {
       return true;
@@ -253,6 +226,27 @@ export class TestGenerationExportPageComponent {
       .toLowerCase();
 
     return haystack.includes(search);
+  }
+
+  private trimNavigationPath(nodes: TestcaseLibraryNode[], currentPath: string[]) {
+    const nextPath: string[] = [];
+    let currentItems = nodes;
+
+    for (const nodeId of currentPath) {
+      const nextNode = currentItems.find((node) => node.id === nodeId);
+      if (!nextNode) {
+        break;
+      }
+
+      nextPath.push(nodeId);
+      currentItems = nextNode.children;
+    }
+
+    return nextPath;
+  }
+
+  private resetFilters() {
+    this.searchTerm.set('');
   }
 
   private downloadBlob(blob: Blob, filename: string) {

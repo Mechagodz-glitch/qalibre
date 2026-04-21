@@ -2,9 +2,13 @@ import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
+  effect,
+  ElementRef,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -13,6 +17,16 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import {
+  BarController,
+  BarElement,
+  CategoryScale,
+  Chart,
+  type ChartConfiguration,
+  type ChartDataset,
+  LinearScale,
+  Tooltip,
+} from 'chart.js';
 import { firstValueFrom } from 'rxjs';
 
 import type {
@@ -81,6 +95,13 @@ type QaMetricsRow = {
   totalExecutions: number;
   isActive: boolean;
 };
+
+type PerformanceMetricKey = keyof Pick<
+  PerformanceBreakdownRow,
+  'generated' | 'approved' | 'executed'
+>;
+
+Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip);
 
 function normalizeQaOwnerName(value: string | null | undefined) {
   const normalized = value?.trim() ?? '';
@@ -172,6 +193,9 @@ async function loadAllGenerationDrafts(
 export class DashboardPageComponent {
   private readonly api = inject(WorkbenchApiService);
   private readonly notifications = inject(NotificationService);
+  private readonly destroyRef = inject(DestroyRef);
+  private performanceChart: Chart<'bar'> | null = null;
+  private performanceChartFrame: number | null = null;
 
   readonly loading = signal(true);
   readonly summary = signal<DashboardSummary | null>(null);
@@ -180,6 +204,8 @@ export class DashboardPageComponent {
   readonly generationDrafts = signal<TestGenerationDraft[]>([]);
   readonly dateFilter = signal<ManualExecutionDateFilter>('last30Days');
   readonly dateFilterOptions = manualExecutionDateFilterOptions;
+  readonly performanceChartCanvas =
+    viewChild<ElementRef<HTMLCanvasElement>>('performanceChartCanvas');
 
   readonly heroChips = computed<HeroChip[]>(() => {
     const summary = this.summary();
@@ -397,7 +423,7 @@ export class DashboardPageComponent {
     return this.performanceBreakdownRows().length * 156;
   });
 
-  readonly performanceChartStep = computed(() => {
+  readonly performanceChartMax = computed(() => {
     const maxValue = Math.max(
       ...this.performanceBreakdownRows().flatMap((row) => [
         row.generated,
@@ -406,39 +432,27 @@ export class DashboardPageComponent {
       ]),
       0,
     );
-    if (maxValue <= 0) {
-      return 200;
+
+    if (maxValue <= 100) {
+      return 100;
     }
 
-    const roughStep = maxValue / 5;
-    const magnitude = 10 ** Math.max(0, Math.floor(Math.log10(roughStep)));
-    const normalized = roughStep / magnitude;
-
-    if (normalized <= 1) {
-      return magnitude;
-    }
-    if (normalized <= 2) {
-      return 2 * magnitude;
-    }
-    if (normalized <= 5) {
-      return 5 * magnitude;
-    }
-
-    return 10 * magnitude;
+    return Math.ceil(maxValue / 100) * 100;
   });
 
-  readonly performanceChartMax = computed(() => this.performanceChartStep() * 5);
+  readonly performanceChartTickValues = computed(() => {
+    const max = this.performanceChartMax();
+    if (max <= 50) {
+      return [50];
+    }
 
-  readonly performanceChartTicks = computed(() =>
-    Array.from({ length: 6 }, (_, index) => {
-      const value = this.performanceChartMax() - this.performanceChartStep() * index;
-      return {
-        value,
-        label: this.formatInteger(value),
-        position: 100 - index * 20,
-      };
-    }),
-  );
+    const values = [50, 100];
+    for (let value = 200; value <= max; value += 100) {
+      values.push(value);
+    }
+
+    return values.filter((value) => value <= max);
+  });
 
   readonly qaRoster = computed(() => {
     if (this.bootstrap()?.testerOptions?.length) {
@@ -685,6 +699,24 @@ export class DashboardPageComponent {
   });
 
   constructor() {
+    effect(() => {
+      const canvas = this.performanceChartCanvas();
+      const rows = this.performanceBreakdownRows();
+
+      if (!canvas || !rows.length) {
+        this.clearPerformanceChartFrame();
+        this.destroyPerformanceChart();
+        return;
+      }
+
+      this.schedulePerformanceChartRender();
+    });
+
+    this.destroyRef.onDestroy(() => {
+      this.clearPerformanceChartFrame();
+      this.destroyPerformanceChart();
+    });
+
     void this.load();
   }
 
@@ -743,17 +775,9 @@ export class DashboardPageComponent {
       .join('');
   }
 
-  performanceBarHeight(value: number) {
-    if (!value) {
-      return 0;
-    }
-
-    return (value / this.performanceChartMax()) * 100;
-  }
-
   performanceTooltip(
     row: PerformanceBreakdownRow,
-    metric: 'generated' | 'approved' | 'executed',
+    metric: PerformanceMetricKey,
   ) {
     return `${row.projectName}: ${this.formatInteger(row[metric])} ${metric} cases`;
   }
@@ -782,6 +806,181 @@ export class DashboardPageComponent {
     }
 
     return Math.max(10, (value / this.qaMetricsGenerationMax()) * 100);
+  }
+
+  private schedulePerformanceChartRender() {
+    this.clearPerformanceChartFrame();
+    this.performanceChartFrame = window.requestAnimationFrame(() => {
+      const canvas = this.performanceChartCanvas()?.nativeElement;
+      if (!canvas || !this.performanceBreakdownRows().length) {
+        this.destroyPerformanceChart();
+        return;
+      }
+
+      this.renderPerformanceChart(canvas);
+      this.performanceChartFrame = null;
+    });
+  }
+
+  private clearPerformanceChartFrame() {
+    if (this.performanceChartFrame !== null) {
+      window.cancelAnimationFrame(this.performanceChartFrame);
+      this.performanceChartFrame = null;
+    }
+  }
+
+  private renderPerformanceChart(canvas: HTMLCanvasElement) {
+    const rows = this.performanceBreakdownRows();
+    if (!rows.length) {
+      this.destroyPerformanceChart();
+      return;
+    }
+
+    const tickValues = [0, ...this.performanceChartTickValues()];
+    const metricKeys: PerformanceMetricKey[] = ['generated', 'approved', 'executed'];
+    const datasetStyles: Record<
+      PerformanceMetricKey,
+      { label: string; color: string; hoverColor: string }
+    > = {
+      generated: {
+        label: 'Generated',
+        color: '#0f5961',
+        hoverColor: '#0c4a51',
+      },
+      approved: {
+        label: 'Approved',
+        color: '#17848d',
+        hoverColor: '#146f77',
+      },
+      executed: {
+        label: 'Executed',
+        color: '#78d96d',
+        hoverColor: '#63c75a',
+      },
+    };
+
+    const datasets = metricKeys.map<ChartDataset<'bar', number[]>>((metric) => ({
+      label: datasetStyles[metric].label,
+      data: rows.map((row) => row[metric]),
+      backgroundColor: datasetStyles[metric].color,
+      hoverBackgroundColor: datasetStyles[metric].hoverColor,
+      borderSkipped: false,
+      borderRadius: {
+        topLeft: 4,
+        topRight: 4,
+      },
+      categoryPercentage: 0.56,
+      barPercentage: 0.72,
+      maxBarThickness: 18,
+    }));
+
+    try {
+      this.destroyPerformanceChart();
+      const config: ChartConfiguration<'bar', number[], string> = {
+        type: 'bar',
+        data: {
+          labels: rows.map((row) => row.projectName),
+          datasets,
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: {
+            duration: 220,
+          },
+          layout: {
+            padding: {
+              top: 18,
+              right: 16,
+              bottom: 8,
+              left: 14,
+            },
+          },
+          plugins: {
+            legend: {
+              display: false,
+            },
+            tooltip: {
+              backgroundColor: 'rgba(15, 56, 66, 0.96)',
+              titleColor: '#f7fbfe',
+              bodyColor: '#f7fbfe',
+              displayColors: true,
+              padding: 12,
+              callbacks: {
+                label: (context) => {
+                  const metric = context.dataset.label?.toLowerCase() as PerformanceMetricKey;
+                  const row = rows[context.dataIndex];
+                  if (!row || !metric) {
+                    return '';
+                  }
+
+                  return this.performanceTooltip(row, metric);
+                },
+              },
+            },
+          },
+          scales: {
+            x: {
+              grid: {
+                display: false,
+              },
+              border: {
+                display: false,
+              },
+              ticks: {
+                color: '#133c46',
+                font: {
+                  size: 13,
+                  weight: 700,
+                },
+                padding: 10,
+                maxRotation: 0,
+                minRotation: 0,
+              },
+            },
+            y: {
+              beginAtZero: true,
+              max: this.performanceChartMax(),
+              afterBuildTicks: (axis) => {
+                axis.ticks = tickValues.map((value) => ({ value }));
+              },
+              border: {
+                display: false,
+              },
+              ticks: {
+                padding: 10,
+                color: '#92a5b0',
+                font: {
+                  size: 12,
+                  weight: 600,
+                },
+                callback: (value) => {
+                  const numericValue = Number(value);
+                  return numericValue === 0 ? '' : this.formatInteger(numericValue);
+                },
+              },
+              grid: {
+                drawTicks: false,
+                color: (context) =>
+                  Number(context.tick.value) === 0
+                    ? 'rgba(118, 145, 161, 0.22)'
+                    : 'rgba(118, 145, 161, 0.16)',
+              },
+            },
+          },
+        },
+      };
+
+      this.performanceChart = new Chart(canvas, config);
+    } catch (error) {
+      console.error('Unable to render the performance breakdown chart.', error);
+      this.destroyPerformanceChart();
+    }
+  }
+
+  private destroyPerformanceChart() {
+    this.performanceChart?.destroy();
+    this.performanceChart = null;
   }
 
   private async load() {

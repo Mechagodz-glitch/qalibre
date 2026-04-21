@@ -61,7 +61,11 @@
         "serve": {
           "builder": "@angular/build:dev-server",
           "options": {
-            "proxyConfig": "proxy.conf.cjs"
+            "proxyConfig": "proxy.conf.cjs",
+            "allowedHosts": [
+              "localhost",
+              "qalibre.detectpl.com"
+            ]
           },
           "configurations": {
             "production": {

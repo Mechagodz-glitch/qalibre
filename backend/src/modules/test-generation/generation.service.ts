@@ -2259,6 +2259,27 @@ function toApprovedDraftExportPayload(draft: DraftWithContext) {
   };
 }
 
+function normalizeTestcaseLibraryQaOwner(value: string | null | undefined) {
+  const normalized = value?.trim() ?? '';
+  if (!normalized) {
+    return null;
+  }
+
+  if (normalized.toLowerCase() === 'local-admin') {
+    return null;
+  }
+
+  return normalized;
+}
+
+function resolveTestcaseLibraryQaOwner(draft: DraftWithContext) {
+  return (
+    normalizeTestcaseLibraryQaOwner(draft.approvedBy) ??
+    normalizeTestcaseLibraryQaOwner(draft.run.contributor?.name) ??
+    null
+  );
+}
+
 function createInternalTestcaseLibraryNode(input: {
   id: string;
   name: string;
@@ -2364,6 +2385,7 @@ function buildTestcaseLibraryTree(drafts: DraftWithContext[]) {
 
   for (const draft of drafts) {
     const approvedDraft = toApprovedDraftExportPayload(draft);
+    const qaOwner = resolveTestcaseLibraryQaOwner(draft);
     const project = approvedDraft.suiteContext.project;
     const moduleItem = approvedDraft.suiteContext.module;
     const page = approvedDraft.suiteContext.page;
@@ -2388,7 +2410,7 @@ function buildTestcaseLibraryTree(drafts: DraftWithContext[]) {
       });
       projectMap.set(project.id, projectNode);
     }
-    applyTestcaseLibraryMetrics(projectNode, suiteCaseCount, approvedDraft.approvedBy);
+    applyTestcaseLibraryMetrics(projectNode, suiteCaseCount, qaOwner);
 
     const moduleKey = `${project.id}:${moduleItem.id}`;
     let moduleNode = moduleMap.get(moduleKey);
@@ -2404,7 +2426,7 @@ function buildTestcaseLibraryTree(drafts: DraftWithContext[]) {
       moduleMap.set(moduleKey, moduleNode);
       projectNode.children.push(moduleNode);
     }
-    applyTestcaseLibraryMetrics(moduleNode, suiteCaseCount, approvedDraft.approvedBy);
+    applyTestcaseLibraryMetrics(moduleNode, suiteCaseCount, qaOwner);
 
     const pageKey = `${moduleItem.id}:${page.id}`;
     let pageNode = pageMap.get(pageKey);
@@ -2421,7 +2443,7 @@ function buildTestcaseLibraryTree(drafts: DraftWithContext[]) {
       pageMap.set(pageKey, pageNode);
       moduleNode.children.push(pageNode);
     }
-    applyTestcaseLibraryMetrics(pageNode, suiteCaseCount, approvedDraft.approvedBy);
+    applyTestcaseLibraryMetrics(pageNode, suiteCaseCount, qaOwner);
 
     if (feature) {
       const featureKey = `${page.id}:${feature.id}`;
@@ -2440,7 +2462,7 @@ function buildTestcaseLibraryTree(drafts: DraftWithContext[]) {
         featureMap.set(featureKey, featureNode);
         pageNode.children.push(featureNode);
       }
-      applyTestcaseLibraryMetrics(featureNode, suiteCaseCount, approvedDraft.approvedBy);
+      applyTestcaseLibraryMetrics(featureNode, suiteCaseCount, qaOwner);
     }
   }
 
@@ -3811,6 +3833,25 @@ export async function rejectGenerationDraft(draftId: string, notes?: string) {
 
   return {
     draft: toDraftResponse(updated),
+  };
+}
+
+export async function deleteGenerationDraft(draftId: string) {
+  const draft = await prisma.testCaseDraft.findUnique({
+    where: { id: draftId },
+    select: { id: true },
+  });
+
+  if (!draft) {
+    throw notFound('Generation draft not found');
+  }
+
+  await prisma.testCaseDraft.delete({
+    where: { id: draftId },
+  });
+
+  return {
+    success: true as const,
   };
 }
 

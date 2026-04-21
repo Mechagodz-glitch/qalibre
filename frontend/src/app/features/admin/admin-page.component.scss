@@ -994,14 +994,24 @@
 }
 
 .client-expansion__feature-chip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.8rem;
-  padding: 0.18rem 0.6rem;
-  border-radius: 999px;
+  display: inline-grid;
+  gap: 0.12rem;
+  min-height: 2.1rem;
+  padding: 0.28rem 0.72rem;
+  border-radius: 0.9rem;
   background: rgba(28, 53, 100, 0.08);
   color: #1c3564fa;
   font-size: 0.78rem;
+  line-height: 1.25;
+}
+
+.client-expansion__feature-chip strong {
+  font-weight: 800;
+}
+
+.client-expansion__feature-chip span {
+  color: #5f7785;
+  font-size: 0.72rem;
   font-weight: 700;
 }
 

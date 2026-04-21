@@ -446,7 +446,10 @@
                                                 @if (pageRow.features.length) {
                                                   <div class="client-expansion__features">
                                                     @for (featureRow of pageRow.features; track featureRow.featureId) {
-                                                      <span class="client-expansion__feature-chip">{{ featureRow.featureName }}</span>
+                                                      <span class="client-expansion__feature-chip">
+                                                        <strong>{{ featureRow.featureName }}</strong>
+                                                        <span>{{ featureRow.testerLabel }}</span>
+                                                      </span>
                                                     }
                                                   </div>
                                                 } @else {
