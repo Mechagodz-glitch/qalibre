@@ -4,11 +4,12 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
-EC2_HOST="${EC2_HOST:-16.28.63.198}"
-PEM_PATH="${PEM_PATH:-C:/Users/Khyati/Downloads/TEST-ENGG-SOFT-TP-MISC-OTH-QALIBRE-AF_SOUTH_1-0426-00001_2026-04-20_05_30_46.pem}"
+EC2_HOST="${EC2_HOST:-52.66.226.158}"
+PEM_PATH="${PEM_PATH:-C:/Users/Aravind/Downloads/TEST-ENGG-SOFT-TP-MISC-OTH-QALIBRE-AP_SOUTH_1-0426-Key.pem}"
 EC2_USER="${EC2_USER:-ubuntu}"
 REMOTE_DIR="${REMOTE_DIR:-/opt/qalibre/app}"
 SSH_PORT="${SSH_PORT:-22}"
+PUBLIC_DOMAIN="${PUBLIC_DOMAIN:-qalibre.detectpl.com}"
 REMOTE_BOOTSTRAP_DIR="${REMOTE_BOOTSTRAP_DIR:-/tmp/qalibre-ec2-bootstrap}"
 SYNC_TOOL=""
 INSTALL_PREQ="false"
@@ -42,6 +43,7 @@ Options:
   --pem <path>               Path to PEM key. Default: ${PEM_PATH}
   --user <ssh-user>          SSH user. If omitted, tries ec2-user, then ubuntu, then admin.
   --remote-dir <path>        Remote application directory. Default: ${REMOTE_DIR}
+  --public-domain <name>     Public domain to print after deploy. Default: ${PUBLIC_DOMAIN}
   --port <ssh-port>          SSH port. Default: ${SSH_PORT}
   --install-preq             Install VM prerequisites before deployment.
   --copy-local-db            Copy the local Docker Postgres data into the EC2 VM Postgres.
@@ -67,6 +69,10 @@ parse_args() {
         ;;
       --remote-dir)
         REMOTE_DIR="$2"
+        shift 2
+        ;;
+      --public-domain)
+        PUBLIC_DOMAIN="$2"
         shift 2
         ;;
       --port)
@@ -345,8 +351,13 @@ copy_env_files() {
     "${EC2_USER}@${EC2_HOST}:${REMOTE_DIR}/backend/.env"
 }
 
+reset_remote_project_dir() {
+  remote_exec_root "rm -rf '${REMOTE_DIR}'"
+  remote_exec "mkdir -p '${REMOTE_DIR}'"
+}
+
 sync_project_with_rsync() {
-  remote_exec "mkdir -p '${REMOTE_DIR}' '${REMOTE_DIR}/backend' '${REMOTE_DIR}/frontend'"
+  reset_remote_project_dir
 
   rsync -az --delete \
     -e "ssh $(ssh_opts)" \
@@ -374,7 +385,7 @@ sync_project_with_tar() {
   project_name="$(basename "$PROJECT_DIR")"
 
   log "rsync is unavailable. Using tar to sync the project."
-  remote_exec "rm -rf '${REMOTE_DIR}' && mkdir -p '${REMOTE_DIR}'"
+  reset_remote_project_dir
 
   tar -C "$project_parent" \
     --exclude="${project_name}/.git" \
@@ -556,8 +567,10 @@ main() {
   summarize_remote_auth_state
 
   log "Deployment complete."
-  log "Frontend: http://${EC2_HOST}:4200"
-  log "Backend:  http://${EC2_HOST}:3000"
+  log "Public Frontend: http://${PUBLIC_DOMAIN}"
+  log "Public Backend:  http://${PUBLIC_DOMAIN}/api"
+  log "Direct Frontend: http://${EC2_HOST}:4200"
+  log "Direct Backend:  http://${EC2_HOST}:3000"
 }
 
 main "$@"

@@ -32,7 +32,12 @@
             ],
             "styles": [
               "src/styles.scss"
-            ]
+            ],
+            "security": {
+              "allowedHosts": [
+                "qalibre.detectpl.com"
+              ]
+            }
           },
           "configurations": {
             "production": {
