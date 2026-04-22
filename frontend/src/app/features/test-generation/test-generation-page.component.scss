@@ -907,6 +907,18 @@
   box-shadow: 0 14px 28px rgba(11, 90, 100, 0.18);
 }
 
+.brand-button[disabled],
+.brand-button:disabled,
+.brand-button.mat-mdc-button-disabled,
+.brand-button.mdc-button--disabled {
+  background: linear-gradient(135deg, #a9bdc2, #c6d6da) !important;
+  color: rgba(255, 255, 255, 0.78) !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+  cursor: not-allowed !important;
+  filter: saturate(0.72);
+}
+
 .launch-button {
   min-height: 2.7rem;
   min-width: 13.25rem;
