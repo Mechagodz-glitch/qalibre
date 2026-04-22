@@ -63,6 +63,7 @@ const userFeatureListSchema = z
   .array(z.preprocess(emptyStringToUndefined, z.string().trim().min(1).max(200)).optional())
   .default([])
   .transform((values) => normalizeUserFeatures(values.filter((value): value is string => Boolean(value))));
+const suiteContextFallbackNames = new Set(['unassigned client', 'unassigned module', 'unassigned page']);
 
 export const generationModeValues = ['processAlpha', 'processBeta', 'manualRecovery'] as const;
 export const generationRunStatusValues = ['pending', 'completed', 'failed'] as const;
@@ -211,32 +212,24 @@ export const generationCreateBodySchema = z
   })
   .superRefine((value, context) => {
     const selectedCount = Object.values(value.selectedDatasetIds).reduce((total, ids) => total + ids.length, 0);
+    const hasSupportingSources = value.sourceInputs.length > 0;
+    const hasKnowledgeSelections = selectedCount > 0;
+    const projectName = value.suiteContext.projectName.trim();
+    const moduleName = value.suiteContext.moduleName.trim();
+    const pageName = value.suiteContext.pageName.trim();
 
-    if (value.mode === 'processAlpha' && value.sourceInputs.length === 0) {
+    if (!hasSupportingSources && !hasKnowledgeSelections) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Process Alpha requires at least one supporting source.',
+        message: 'Add at least one supporting source or one knowledge-base selection before generating.',
         path: ['sourceInputs'],
       });
     }
 
-    if (value.mode === 'processBeta' && selectedCount === 0) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Process Beta requires at least one manual knowledge-base selection.',
-        path: ['selectedDatasetIds'],
-      });
-    }
-
-    if (value.mode === 'manualRecovery' && value.sourceInputs.length === 0 && selectedCount === 0) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Manual recovery requires retained source context or selected knowledge-base items.',
-        path: ['sourceInputs'],
-      });
-    }
-
-    if (!value.suiteContext.pageId && !value.suiteContext.pageName.trim()) {
+    if (
+      !value.suiteContext.pageId &&
+      (!pageName || suiteContextFallbackNames.has(pageName.toLowerCase()))
+    ) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'Select an existing page or enter a page name.',
@@ -244,7 +237,10 @@ export const generationCreateBodySchema = z
       });
     }
 
-    if (!value.suiteContext.moduleId && !value.suiteContext.moduleName.trim()) {
+    if (
+      !value.suiteContext.moduleId &&
+      (!moduleName || suiteContextFallbackNames.has(moduleName.toLowerCase()))
+    ) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'Select an existing module or enter a module name.',
@@ -252,7 +248,10 @@ export const generationCreateBodySchema = z
       });
     }
 
-    if (!value.suiteContext.projectId && !value.suiteContext.projectName.trim()) {
+    if (
+      !value.suiteContext.projectId &&
+      (!projectName || suiteContextFallbackNames.has(projectName.toLowerCase()))
+    ) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'Select an existing client or enter a client name.',

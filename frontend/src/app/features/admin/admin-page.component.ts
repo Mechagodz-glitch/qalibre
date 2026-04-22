@@ -452,13 +452,12 @@ export class AdminPageComponent {
   }
 
   async initializeWorkspace() {
-    await this.loadWorkspace();
-
     if (!this.qaBootstrapInitialized) {
-      this.qaBootstrapInitialized = true;
       await this.seedKnownQaMembers();
-      await this.loadWorkspace();
+      this.qaBootstrapInitialized = true;
     }
+
+    await this.loadWorkspace();
   }
 
   async loadWorkspace() {
@@ -1823,25 +1822,47 @@ export class AdminPageComponent {
 
   private async seedKnownQaMembers() {
     const allAccesses = this.pageAccessDefinitions().map((definition) => definition.key);
-    const existingUsers = this.users();
+    const existingUsers = (await firstValueFrom(this.api.listAdminUsers())).items ?? [];
+
     for (const profile of this.qaBootstrapProfiles) {
       const matchingUser =
         existingUsers.find((user) => user.email.toLowerCase() === profile.email.toLowerCase()) ?? null;
-      const payload = {
-        email: profile.email,
-        name: profile.name,
-        role: 'USER' as const,
-        isActive: true,
-        pageAccesses: allAccesses,
-        designation: profile.designation,
-      };
 
       if (matchingUser) {
-        await firstValueFrom(this.api.updateAdminUser(matchingUser.id, payload));
+        const payload = {
+          email: profile.email,
+          name: profile.name,
+          role: matchingUser.role,
+          isActive: matchingUser.isActive,
+          pageAccesses: this.normalizeAccessesForRole(matchingUser.role, matchingUser.pageAccesses),
+          designation: profile.designation,
+        };
+
+        const requiresSync =
+          matchingUser.name !== profile.name ||
+          matchingUser.role !== payload.role ||
+          matchingUser.isActive !== payload.isActive ||
+          (matchingUser.contributor?.roleTitle ?? '') !== profile.designation ||
+          payload.pageAccesses.length !== matchingUser.pageAccesses.length ||
+          payload.pageAccesses.some((access) => !matchingUser.pageAccesses.includes(access));
+
+        if (requiresSync) {
+          await firstValueFrom(this.api.updateAdminUser(matchingUser.id, payload));
+        }
+
         continue;
       }
 
-      await firstValueFrom(this.api.createAdminUser(payload));
+      await firstValueFrom(
+        this.api.createAdminUser({
+          email: profile.email,
+          name: profile.name,
+          role: 'USER',
+          isActive: true,
+          pageAccesses: allAccesses,
+          designation: profile.designation,
+        }),
+      );
     }
   }
 

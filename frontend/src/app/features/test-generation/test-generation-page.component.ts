@@ -320,6 +320,10 @@ export class TestGenerationPageComponent {
     this.formRevision();
     return this.datasetSections.reduce((total, section) => total + this.getSelectionCount(section.key), 0);
   });
+  readonly canSubmitGeneration = computed(() => {
+    this.formRevision();
+    return this.form.controls.title.valid && this.hasRequiredSuiteScope() && this.hasGenerationEvidence();
+  });
 
   readonly enabledCoverageCount = computed(() => {
     this.formRevision();
@@ -645,6 +649,20 @@ export class TestGenerationPageComponent {
     if (this.form.controls.title.invalid) {
       this.form.controls.title.markAsTouched();
       this.notifications.error('Enter a suite title before launching generation.');
+      return;
+    }
+
+    if (!this.hasRequiredSuiteScope()) {
+      this.markRequiredScopeControlsTouched();
+      this.notifications.error('Select or enter a client, module, and page before launching generation.');
+      return;
+    }
+
+    if (!this.hasGenerationEvidence()) {
+      this.markGenerationEvidenceTouched();
+      this.notifications.error(
+        'Add at least one supporting source or select at least one knowledge-base item before launching generation.',
+      );
       return;
     }
 
@@ -1108,18 +1126,6 @@ export class TestGenerationPageComponent {
     this.titleManuallyEdited.set(false);
   }
 
-  private fallbackProjectName() {
-    return 'Unassigned Client';
-  }
-
-  private fallbackModuleName() {
-    return 'Unassigned Module';
-  }
-
-  private fallbackPageName() {
-    return 'Unassigned Page';
-  }
-
   private findProject(projectId: string) {
     return this.projectHierarchy().find((item) => item.id === projectId) ?? null;
   }
@@ -1341,9 +1347,9 @@ export class TestGenerationPageComponent {
     const featureId =
       this.featureInputMode() === 'existing' ? this.form.controls.featureId.value || undefined : undefined;
 
-    const projectName = this.effectiveProjectName() || this.fallbackProjectName();
-    const moduleName = this.effectiveModuleName() || this.fallbackModuleName();
-    const pageName = this.effectivePageName() || this.fallbackPageName();
+    const projectName = this.effectiveProjectName();
+    const moduleName = this.effectiveModuleName();
+    const pageName = this.effectivePageName();
     const featureName = this.effectiveFeatureName() || undefined;
     const currentUser = this.auth.currentUser();
     const contributorId = currentUser?.contributorId?.trim() || this.form.controls.contributorId.value || undefined;
@@ -1360,6 +1366,49 @@ export class TestGenerationPageComponent {
       featureId,
       featureName,
     };
+  }
+
+  private hasRequiredSuiteScope() {
+    return Boolean(
+      this.effectiveProjectName().trim() && this.effectiveModuleName().trim() && this.effectivePageName().trim(),
+    );
+  }
+
+  private hasGenerationEvidence() {
+    return this.selectedSourceCount() > 0 || this.selectedKnowledgeItemCount() > 0;
+  }
+
+  private markRequiredScopeControlsTouched() {
+    const touchControl = (
+      controlName: 'projectId' | 'projectName' | 'moduleId' | 'moduleName' | 'pageId' | 'pageName',
+    ) => {
+      const control = this.form.controls[controlName];
+      control.markAsTouched();
+      control.markAsDirty();
+      control.updateValueAndValidity({ emitEvent: false });
+    };
+
+    if (!this.effectiveProjectName().trim()) {
+      touchControl(this.projectInputMode() === 'existing' ? 'projectId' : 'projectName');
+    }
+
+    if (!this.effectiveModuleName().trim()) {
+      touchControl(this.moduleInputMode() === 'existing' ? 'moduleId' : 'moduleName');
+    }
+
+    if (!this.effectivePageName().trim()) {
+      touchControl(this.pageInputMode() === 'existing' ? 'pageId' : 'pageName');
+    }
+  }
+
+  private markGenerationEvidenceTouched() {
+    this.sourceArray.markAsTouched();
+    this.sourceArray.markAsDirty();
+
+    for (const section of this.datasetSections) {
+      this.form.controls[section.key].markAsTouched();
+      this.form.controls[section.key].markAsDirty();
+    }
   }
 
   private getSelectedDatasetIds(): GenerationSelectedDatasetIds {

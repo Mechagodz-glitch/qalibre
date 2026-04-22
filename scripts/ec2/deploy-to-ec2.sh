@@ -13,6 +13,7 @@ REMOTE_BOOTSTRAP_DIR="${REMOTE_BOOTSTRAP_DIR:-/tmp/qalibre-ec2-bootstrap}"
 SYNC_TOOL=""
 INSTALL_PREQ="false"
 COPY_LOCAL_DB="false"
+COPY_LOCAL_USERS="false"
 
 ROOT_ENV_FILE="${PROJECT_DIR}/.env"
 BACKEND_ENV_FILE="${PROJECT_DIR}/backend/.env"
@@ -44,6 +45,7 @@ Options:
   --port <ssh-port>          SSH port. Default: ${SSH_PORT}
   --install-preq             Install VM prerequisites before deployment.
   --copy-local-db            Copy the local Docker Postgres data into the EC2 VM Postgres.
+  --copy-local-users         Include local AppUser auth records when copying the local DB.
   -h, --help                 Show this help.
 EOF
 }
@@ -79,6 +81,10 @@ parse_args() {
         COPY_LOCAL_DB="true"
         shift
         ;;
+      --copy-local-users)
+        COPY_LOCAL_USERS="true"
+        shift
+        ;;
       -h|--help)
         usage
         exit 0
@@ -88,6 +94,12 @@ parse_args() {
         ;;
     esac
   done
+}
+
+validate_copy_flags() {
+  if [[ "$COPY_LOCAL_USERS" == "true" && "$COPY_LOCAL_DB" != "true" ]]; then
+    warn "--copy-local-users only applies when --copy-local-db is also enabled. The flag will be ignored for this deployment."
+  fi
 }
 
 require_local_tools() {
@@ -431,6 +443,7 @@ wait_for_remote_postgres() {
 
 copy_local_db_to_remote() {
   local postgres_user postgres_password postgres_db remote_dump_path local_user_count remote_user_count
+  local -a dump_args
   postgres_user="$(read_root_env_or_default "POSTGRES_USER" "qa_user")"
   postgres_password="$(read_root_env_or_default "POSTGRES_PASSWORD" "qa_password")"
   postgres_db="$(read_root_env_or_default "POSTGRES_DB" "qa_dataset_db")"
@@ -438,18 +451,28 @@ copy_local_db_to_remote() {
 
   ensure_local_postgres_running
   LOCAL_DB_DUMP="$(mktemp --suffix=.sql.gz)"
-  local_user_count="$(query_local_app_user_count | tr -d '[:space:]')"
 
-  log "Creating a dump of the local Docker Postgres database."
+  dump_args=(
+    -U "${postgres_user}"
+    -d "${postgres_db}"
+    --clean
+    --if-exists
+    --no-owner
+    --no-privileges
+    --encoding=UTF8
+  )
+
+  if [[ "$COPY_LOCAL_USERS" == "true" ]]; then
+    local_user_count="$(query_local_app_user_count | tr -d '[:space:]')"
+    log "Creating a dump of the local Docker Postgres database including AppUser auth records."
+  else
+    dump_args+=("--exclude-table=public.\"AppUser\"")
+    log "Creating a dump of the local Docker Postgres database while preserving remote AppUser auth records."
+  fi
+
   local_compose exec -T -e "PGPASSWORD=${postgres_password}" postgres \
     pg_dump \
-      -U "${postgres_user}" \
-      -d "${postgres_db}" \
-      --clean \
-      --if-exists \
-      --no-owner \
-      --no-privileges \
-      --encoding=UTF8 \
+      "${dump_args[@]}" \
     | gzip -c > "${LOCAL_DB_DUMP}"
 
   [[ -s "${LOCAL_DB_DUMP}" ]] || fail "Local database dump failed or produced an empty archive."
@@ -465,11 +488,15 @@ copy_local_db_to_remote() {
   remote_exec_root "cd '${REMOTE_DIR}' && gunzip -c '${remote_dump_path}' | docker compose exec -T -e PGPASSWORD='${postgres_password}' postgres psql -v ON_ERROR_STOP=1 -U '${postgres_user}' -d '${postgres_db}'"
   remote_exec "rm -f '${remote_dump_path}'"
 
-  remote_user_count="$(query_remote_app_user_count | tr -d '[:space:]')"
-  log "Auth user records copied: local=${local_user_count:-0}, remote=${remote_user_count:-0}"
+  if [[ "$COPY_LOCAL_USERS" == "true" ]]; then
+    remote_user_count="$(query_remote_app_user_count | tr -d '[:space:]')"
+    log "Auth user records copied: local=${local_user_count:-0}, remote=${remote_user_count:-0}"
 
-  if [[ -n "${local_user_count}" && -n "${remote_user_count}" && "${local_user_count}" != "${remote_user_count}" ]]; then
-    warn "Local and remote AppUser counts differ. Some auth records may not have been copied as expected."
+    if [[ -n "${local_user_count}" && -n "${remote_user_count}" && "${local_user_count}" != "${remote_user_count}" ]]; then
+      warn "Local and remote AppUser counts differ. Some auth records may not have been copied as expected."
+    fi
+  else
+    log "Remote AppUser auth records were preserved."
   fi
 }
 
@@ -499,6 +526,7 @@ main() {
   trap cleanup EXIT
 
   parse_args "$@"
+  validate_copy_flags
   require_local_tools
   ensure_required_project_files
   ensure_root_compose_env

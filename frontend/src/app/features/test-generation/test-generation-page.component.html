@@ -493,7 +493,13 @@
             @if (currentTrackedRun()?.status === 'pending') {
               <button mat-stroked-button type="button" color="warn" (click)="stopTrackedRun()">Stop generation</button>
             }
-            <button mat-flat-button class="brand-button launch-button" type="button" (click)="submit()" [disabled]="submitting()">
+            <button
+              mat-flat-button
+              class="brand-button launch-button"
+              type="button"
+              (click)="submit()"
+              [disabled]="submitting() || !canSubmitGeneration()"
+            >
               @if (submitting()) {
                 Generating...
               } @else {
